@@ -8,7 +8,7 @@ Create a POC of a RAG to help/improve searching in the Elixir/Phoenix/Plug/LiveV
 
 
 - What is our source of knowledge? We can firstly only seed the vector database with some Github raw pages from the Elixir documentation.
-  We need to define how to ingest these documents to produce _embeddings_ saved into a _vector database_. Do we run a naive [chunk]? cf <https://docs.llamaindex.ai/en/stable/examples/retrievers/auto_vs_recursive_retriever/>, or use [BM25](https://docs.llamaindex.ai/en/stable/examples/retrievers/bm25_retriever/), with an Elixir implementation [BM25](https://github.com/elliotekj/bm25)? 
+  We need to define how to ingest these documents to produce _embeddings_ saved into a _vector database_. Do we run a naive [chunk] or [structured chunks](https://docs.llamaindex.ai/en/stable/examples/retrievers/auto_vs_recursive_retriever/), [Chunk + Document Hybrid Retrieval](https://docs.llamaindex.ai/en/stable/examples/retrievers/multi_doc_together_hybrid/), or use [BM25](https://docs.llamaindex.ai/en/stable/examples/retrievers/bm25_retriever/), with an Elixir implementation [BM25](https://github.com/elliotekj/bm25)? 
 
 - Which embedding? To be defined. [This video](https://www.youtube.com/watch?v=ibzlEQmgPPY) uses "GT-SMALL" (from Alibaba).
   The problem could be to be able to use this with Elixir/`Bumblebee.Text`. The list: <https://huggingface.co/spaces/mteb/leaderboard>
