@@ -17,6 +17,8 @@ Create a POC of a RAG to help/improve searching in the Elixir/Phoenix/Plug/LiveV
   
 - Which interface? A very simple one: an input that takes a text, and a textarea where we display the response.
 
+- Which **prompt**? ...
+
 - Next? We can further improve be accepting documents, possibly links serving raw text, but also upload markdown files.
 
 - Deploy this? As a first step, this is a POC, to be run locally.
