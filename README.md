@@ -22,8 +22,9 @@ Create a POC of a RAG to help/improve searching in the Elixir/Phoenix/Plug/LiveV
 - Deploy this? As a first step, this is a POC, to be run locally.
 
 - Source of inspiration. Repos, blog post?
-  - <https://github.com/supabase-community/chatgpt-your-files>
+  - Bumblebee, RAG: <https://hexdocs.pm/bumblebee/llms_rag.html#introduction>
+  - Supabase: <https://github.com/supabase-community/chatgpt-your-files>
+  - Langchain: <https://github.com/brainlid/langchain_demo>
   - <https://github.com/nileshtrivedi/autogen>
-  - <https://github.com/brainlid/langchain_demo>
 
 What are your thoughts?
