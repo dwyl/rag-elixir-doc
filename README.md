@@ -7,7 +7,7 @@ Create a POC of a RAG to help/improve searching in the Elixir/Phoenix/Plug/LiveV
 <img width="592" alt="Screenshot 2024-08-14 at 17 56 40" src="https://github.com/user-attachments/assets/af4ef9ea-88f8-42bf-b963-013ea35d429f">
 
 - Which embedding? To be defined. [This video](https://www.youtube.com/watch?v=ibzlEQmgPPY) uses "GT-SMALL" (from Alibaba).
-  The problem could be to be able to use this with Elixir/Nx/Axon/Bumblebee. The list: <https://huggingface.co/spaces/mteb/leaderboard>
+  The problem could be to be able to use this with Elixir/`Bumblebee.Text`. The list: <https://huggingface.co/spaces/mteb/leaderboard>
 
 - What is our source? We can firstly only seed the vector database with some Github raw pages we download.
   We need to define how to ingest/chunk these documents to produce embeddings saved into a vector database.
