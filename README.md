@@ -10,9 +10,9 @@ Create a POC of a RAG to help/improve searching in the Elixir/Phoenix/Plug/LiveV
   The problem could be to be able to use this with Elixir/Nx/Axon/Bumblebee. The list: <https://huggingface.co/spaces/mteb/leaderboard>
 
 - What is our source? We can firstly only seed the vector database with some Github raw pages we download.
-  We need to define how to parse the documents and how to produce these embeddings.
+  We need to define how to ingest/chunk these documents to produce embeddings saved into a vector database.
 
-- Which database? Postgres with PGVector, or Supabase??
+- Which database? Postgres with PGVector, or [Supabase](https://github.com/supabase/supabase), or [ChromaDB](https://github.com/3zcurdia/chroma)??
   
 - Which interface? A very simple one: an input that takes a text, and a textarea where we display the response.
 
