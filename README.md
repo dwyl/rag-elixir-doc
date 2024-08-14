@@ -23,5 +23,6 @@ Create a POC of a RAG to help/improve searching in the Elixir/Phoenix/Plug/LiveV
 - Source of inspiration. Repos, blog post?
   - <https://github.com/supabase-community/chatgpt-your-files>
   - <https://github.com/nileshtrivedi/autogen>
+  - <https://github.com/brainlid/langchain_demo>
 
 What are your thoughts?
