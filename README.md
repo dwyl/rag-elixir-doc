@@ -32,4 +32,4 @@
   - <https://github.com/nileshtrivedi/autogen>
   - this Elixirforum post gives some directions: <https://elixirforum.com/t/rag-app-using-elixir-feasible/60439/15>
 
-What are your thoughts?
+What are your thoughts? I opened a discussion where I document some of the pathe followed.
