@@ -1,14 +1,16 @@
 # rag-elixir-doc
 
-Create a POC of a RAG to help/improve searching in the Elixir/Phoenix/Plug/LiveView documentation. We can focus on only "text" based documents, not including images, or formatted data such as tables.
+- What is `RAG`: it is "chat with your documents".
+
+- Scope: create a POC of a RAG to help/improve searching in the Elixir/Phoenix/Plug/LiveView documentation. We can focus on only "text" based documents, as these documents do not including images, or nor formatted data such as tables.
 
 - What is our source of knowledge? We can firstly only seed the vector database with some Github raw pages from the Elixir documentation.
   We need to define how to ingest these documents to produce _embeddings_ saved into a _vector database_. Do we run a naive chunk? or [structured chunks](https://docs.llamaindex.ai/en/stable/examples/retrievers/auto_vs_recursive_retriever/), [Chunk + Document Hybrid Retrieval](https://docs.llamaindex.ai/en/stable/examples/retrievers/multi_doc_together_hybrid/), or use [BM25](https://docs.llamaindex.ai/en/stable/examples/retrievers/bm25_retriever/), with an Elixir implementation [BM25](https://github.com/elliotekj/bm25)? 
 
-- Which embedding? [This video](https://www.youtube.com/watch?v=ibzlEQmgPPY) uses "GT-SMALL" (from Alibaba).
+- Which embedding? [SBert]()https://www.sbert.net/), or as in [this video](https://www.youtube.com/watch?v=ibzlEQmgPPY) uses "GT-SMALL" (from Alibaba).
   The problem could be to be able to use this with Elixir/`Bumblebee.Text`. The list: <https://huggingface.co/spaces/mteb/leaderboard>
   
-- Which vector database? Postgres with PGVector, or [Supabase](https://github.com/supabase/supabase), or [ChromaDB](https://github.com/3zcurdia/chroma)??
+- An index (`HNSW`) or a vector database? Postgres with PGVector, or [Supabase](https://github.com/supabase/supabase), or [ChromaDB](https://github.com/3zcurdia/chroma)??
   
 - Which interface? I suggest a very simple one as this is not the focus. An input that takes a text, and a textarea where we display the response. The "context" documents should be loaded as seeds into te database. One challenge could be to format nicely <code>code</code> in the response.
 
