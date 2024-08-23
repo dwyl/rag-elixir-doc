@@ -104,6 +104,9 @@ end
 
 - Which **LLM**? The base LLM could be ChatGPT 3.5? Ollama? Mistral? Claude 3.5 Sonnet. We will choose to use `Ollama` since you can install and run it locally.
 
+  [<img width="974" alt="Screenshot 2024-08-23 at 17 21 44" src="https://github.com/user-attachments/assets/cd86b1c3-9bdb-46cb-a4df-20cf34604380">](https://hexdocs.pm/ollama/Ollama.html)
+
+- a comparison of different LLMs:
 <img width="592" alt="Screenshot 2024-08-14 at 17 56 40" src="https://github.com/user-attachments/assets/af4ef9ea-88f8-42bf-b963-013ea35d429f">
 
 - Next? We can further improve be accepting documents, possibly links serving raw text, but also upload markdown files.
