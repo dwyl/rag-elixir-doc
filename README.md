@@ -1,5 +1,7 @@
 # rag-elixir-doc
 
+<h1 align="center">Building....</h1>
+
 - What is `RAG`: it is "chat with your documents", meaning you ask an LLM model to respond based on additional sources. Theses sources may or may not be already incorporated inside the training used for the LLM. Using RAG is _not about fine tuning_ the model, which is changing the coefficients or structure of the model based on additional sources. RAG is about giving an additional context - the "context window" - to enhance or constraint the response from the LLM. Note that the LLM accepts a limited amounts of tokens, thus the window context is limited.
 
 - Scope: create a POC of a RAG to help/improve searching in the Elixir/Phoenix/Plug/LiveView documentation. We can focus on only "text" based documents, as these documents do not including images, or nor formatted data such as tables.
