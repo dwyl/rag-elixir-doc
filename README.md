@@ -17,12 +17,23 @@ RAG is about giving an additional context - the "context window" - to enhance or
 
 ## Scope of this POC:
 
-Most direct questions to an LLM produce halucinated responses, invented in other words.
+Most questions to an LLM produce halucinated responses, or in other words, invented.
 
 We want to create a POC of a RAG focussed on Elixir/Phoenix/Plug/LiveView to help to find "precise" responses on questions about the documentation. 
 
 We want responses restricted to the context computed from Phoenix LiveView repos.
 
+#### Example of halucination with Llama
+
+You can easily test LLama3.1 via `ollama run llama3.1`.
+
+```txt
+question: "I want to use an Elixir portage of llama. Can you suggest a library?
+
+response: "**Elixir-T5**: This is an Elixir port of a popular LLM architecture (T5). It's designed specifically for use with Elixir and might be worth considering. You may also consider **LLaMA-erl**: This is an Elixir wrapper for the LLaMA model, which is similar to Ollama.
+```
+
+Nor `Elixir-T5` nor `LLama-erl` exist!
 
 ## Source of knowledge
 
@@ -181,16 +192,6 @@ A Dockyard post on this: <https://dockyard.com/blog/2023/05/16/open-source-elixi
 - a comparison of different LLMs:
 <img width="592" alt="Screenshot 2024-08-14 at 17 56 40" src="https://github.com/user-attachments/assets/af4ef9ea-88f8-42bf-b963-013ea35d429f">
 
-#### Test Llama
-
-You can easily test LLama3.1 via `ollama run llama3.1`. It seems to halucinate quit a lot. For example:
-
-```txt
-question: "I want to use an Elixir portage of llama as LLM. Do you have suggestion of any library to use?
-response: "**Elixir-T5**: This is an Elixir port of a popular LLM architecture (T5). It's designed specifically for use with Elixir and might be worth considering. You may also consider **LLaMA-erl**: This is an Elixir wrapper for the LLaMA model, which is similar to Ollama.
-```
-
-Nor `Elixir-T5` nor `LLama-erl` exist!
 
 ## Going further? Deploy? 
 
