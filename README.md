@@ -35,6 +35,31 @@ response: "**Elixir-T5**: This is an Elixir port of a popular LLM architecture (
 
 Nor `Elixir-T5` nor `LLama-erl` exist!
 
+I tried CodeLLama: `ollama run codellama`:
+
+```txt
+question: which Elixir library would you suggest for text chunking to compute embeddings efficiently?
+
+response:
+There are several Elixir libraries available for text chunking and computing embeddings, each with its own strengths and weaknesses. Here are a few popular options:
+
+1. `elixir_bert`: This is an Elixir port of the BERT (Bidirectional Encoder Representations from Transformers) model, which is a powerful language model that can be
+used for text chunking. It provides a simple and efficient interface for computing embeddings, and it supports both CPU and GPU acceleration.
+2. `elixir_bert_embedding`: This is an Elixir wrapper for the BERT embedding layer, which allows you to compute embeddings for input sequences using a pre-trained
+BERT model. It provides a simple interface for text chunking and supports both CPU and GPU acceleration.
+3. `elixir_word2vec`: This is an Elixir port of the Word2Vec model, which is another popular language model that can be used for text chunking. It provides a simple
+and efficient interface for computing embeddings, and it supports both CPU and GPU acceleration.
+4. `elixir_glove`: This is an Elixir port of the GLOVE (Global Vectors for Word Representation) model, which is a language model that can be used for text chunking.
+It provides a simple and efficient interface for computing embeddings, and it supports both CPU and GPU acceleration.
+
+All of these libraries should work well for your purposes, but you may want to consider which one best fits your specific needs. If you have any specific requirements
+or preferences (e.g., support for a particular file format or feature), you may want to choose the library that is most suitable for your use case.
+```
+
+`elixir_bert` does not exist, nor `elixir_bert_embedding`, nor `elixir_glove` nor `elixir_workd2vec`. However, after researching a bit, I found `ExFinalFusion`, a NIF of `FinalFusion`.
+[![Screenshot 2024-08-24 at 19 33 08](https://github.com/user-attachments/assets/11d7daeb-8f3f-49ea-a2af-38c2c654c42d)](https://hexdocs.pm/ex_final_fusion/ExFinalFusion.html#summary)
+
+
 ## Source of knowledge
 
 We firstly seed the vector database with some Github markdown pages from the Elixir documentation.
