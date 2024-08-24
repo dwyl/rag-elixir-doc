@@ -111,8 +111,16 @@ end
 
 ## What is **bi-encoding** and **cross-encoding**?
 
-- Bi-encoders: Encode the query and document separately, then compare their vector representations.
-- Cross-encoders: Take both the query and document as input simultaneously, allowing for more complex interactions between them.
+- [Bi-encoders]: Encode the query and document separately, then compare their vector representations. This is the "standard" similarity search.
+
+  Bi-encoding does consider the relationship between the query and each document, but it does so independently for each document. The main problem is that bi-encoding might not capture nuanced differences between documents or complex query-document relationships. `HNSW` indexes or `BM25` can be used for this.
+  
+- Cross-encoders: Take both the query and document as input simultaneously, allowing for more complex interactions between them. It processes the query and document together through a neural network (typically a transformer model like BERT) to produce a single relevance score. This allows the model to capture complex interactions between the query and document at all levels of representation.
+
+  Cross-encoders typically perform better than bi-encoders in terms of accuracy, but are computationally more expensive and slower at inference time.
+  They are not suitable for large-scale retrieval because they require comparing the query with every document from scratch, which doesn't scale well.
+  Therefor, Cross-encoding is often used in a two-stage retrieval process.
+
 - How cross-encoders works in reranking?:
   - After initial retrieval (e.g., using vector similarity), you pass each query-document pair through the cross-encoder.
   - The cross-encoder outputs a relevance score for each pair.
@@ -150,7 +158,9 @@ The LLM should be able to generate an "accurate" response constrainted by this c
 
 ## Which **LLM**? 
 
-The base LLM could be ChatGPT 3.5? Ollama? Mistral? Claude 3.5 Sonnet. We will choose to use `Ollama` since you can install and run it locally.
+The base LLM could be ChatGPT 3.5? Ollama? Mistral? Claude 3.5 Sonnet, T5? We will choose to use `Ollama` since you can install and run it locally.
+
+A Dockyard post on this: <https://dockyard.com/blog/2023/05/16/open-source-elixir-alternatives-to-chatgpt>
 
   [<img width="974" alt="Screenshot 2024-08-23 at 17 21 44" src="https://github.com/user-attachments/assets/cd86b1c3-9bdb-46cb-a4df-20cf34604380">](https://hexdocs.pm/ollama/Ollama.html)
 
@@ -172,5 +182,6 @@ Which repos, blog post?
   - Supabase: <https://github.com/supabase-community/chatgpt-your-files>
   - Langchain: <https://github.com/brainlid/langchain_demo>
   - <https://github.com/nileshtrivedi/autogen>
+  - <https://dockyard.com/blog/2023/05/16/open-source-elixir-alternatives-to-chatgpt>
   - this Elixirforum post gives some directions: <https://elixirforum.com/t/rag-app-using-elixir-feasible/60439/15>
 
