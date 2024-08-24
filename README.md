@@ -193,13 +193,14 @@ A Dockyard post on this: <https://dockyard.com/blog/2023/05/16/open-source-elixi
 <img width="592" alt="Screenshot 2024-08-14 at 17 56 40" src="https://github.com/user-attachments/assets/af4ef9ea-88f8-42bf-b963-013ea35d429f">
 
 
-## Going further? Deploy? 
+## Going further?
 
-We can further measure our performance, 
+This POC is expected to be run **only locally** (no deploy, mainly because of the costs).
+
+Can we measure our performance?
 
 We can enhance our documentation base by accepting documents "on the fly" (download a given link).
 
-As a first step, this is a POC, to be run **locally** (no deploy, mainly because of the costs).
 
 ## Source of inspiration. 
 
