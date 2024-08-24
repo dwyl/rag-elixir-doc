@@ -140,7 +140,7 @@ We opted for "sentence-transformer".
 - or [Supabase](https://github.com/supabase/supabase),
 - or [ChromaDB](https://github.com/3zcurdia/chroma)?
 
-We will use Postgres with the extension PG_Vector and the HNSWL algorithm.
+We will use Postgres with the extension PG_Vector and the HNSWL algorithm. See discussion on the Postgres + pg_vector setup.
   
 ## How to **prompt**? 
 
