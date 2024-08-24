@@ -135,7 +135,7 @@ Do we run a naive chunk? or [use this package](https://github.com/revelrylabs/te
 
 ## Which embedding? 
 
-- [SBert]()https://www.sbert.net/),
+- [SBert](https://www.sbert.net/),
 - or as in [this video](https://www.youtube.com/watch?v=ibzlEQmgPPY) uses "GT-SMALL" (from Alibaba)
 - or "sentence-transformer". Check: <https://huggingface.co/spaces/mteb/leaderboard>.
 
@@ -158,14 +158,37 @@ The LLM should be able to generate an "accurate" response constrainted by this c
 
 ## Which **LLM**? 
 
-The base LLM could be ChatGPT 3.5? Ollama? Mistral? Claude 3.5 Sonnet, T5? We will choose to use `Ollama` since you can install and run it locally.
+Our main problem will be halucination, in other words, the LLM invents the response.
 
-A Dockyard post on this: <https://dockyard.com/blog/2023/05/16/open-source-elixir-alternatives-to-chatgpt>
+The LLM could be OpenAI ChatGPT 3.5/4? Meta Llama? Mistral? Anthropic Claude 3.5 Sonnet? , Google T5?
 
+A Dockyard post on this: <https://dockyard.com/blog/2023/05/16/open-source-elixir-alternatives-to-chatgpt>.
+
+#### LLama ?
+
+- A Fly.io post on using ``llama.cpp` with `Rustler`: <https://fly.io/phoenix-files/using-llama-cpp-with-elixir-and-rustler/>
+
+[![Screenshot 2024-08-24 at 18 58 16](https://github.com/user-attachments/assets/9bdc74d8-4e83-4ffc-8ac1-70a941cdf55b)](https://fly.io/phoenix-files/using-llama-cpp-with-elixir-and-rustler/)
+
+- the "ollama-ex" wrapper:
   [<img width="974" alt="Screenshot 2024-08-23 at 17 21 44" src="https://github.com/user-attachments/assets/cd86b1c3-9bdb-46cb-a4df-20cf34604380">](https://hexdocs.pm/ollama/Ollama.html)
+
+- ExLLama: LlammaCpp.rs NIF wrapper for Elixir/Erlang:
+[![Screenshot 2024-08-24 at 18 58 28](https://github.com/user-attachments/assets/8b7194ce-4ecf-4c84-87d7-395d3100a276)](https://hexdocs.pm/ex_llama/readme.html)
 
 - a comparison of different LLMs:
 <img width="592" alt="Screenshot 2024-08-14 at 17 56 40" src="https://github.com/user-attachments/assets/af4ef9ea-88f8-42bf-b963-013ea35d429f">
+
+#### Test Llama
+
+You can easily test LLama3.1 via `ollama run llama3.1`. It seems to halucinate quit a lot. For example:
+
+```txt
+question: "I want to use an Elixir portage of llama as LLM. Do you have suggestion of any library to use?
+response: "**Elixir-T5**: This is an Elixir port of a popular LLM architecture (T5). It's designed specifically for use with Elixir and might be worth considering. You may also consider **LLaMA-erl**: This is an Elixir wrapper for the LLaMA model, which is similar to Ollama.
+```
+
+Nor `Elixir-T5` nor `LLama-erl` exist!
 
 ## Going further? Deploy? 
 
@@ -183,5 +206,6 @@ Which repos, blog post?
   - Langchain: <https://github.com/brainlid/langchain_demo>
   - <https://github.com/nileshtrivedi/autogen>
   - <https://dockyard.com/blog/2023/05/16/open-source-elixir-alternatives-to-chatgpt>
+  - <https://fly.io/phoenix-files/using-llama-cpp-with-elixir-and-rustler/>
   - this Elixirforum post gives some directions: <https://elixirforum.com/t/rag-app-using-elixir-feasible/60439/15>
 
