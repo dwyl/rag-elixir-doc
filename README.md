@@ -17,9 +17,11 @@ RAG is about giving an additional context - the "context window" - to enhance or
 
 ## Scope of this POC:
 
-Create a POC of a RAG to help/improve searching in the Elixir/Phoenix/Plug/LiveView documentation. 
+Most direct questions to an LLM produce halucinated responses, invented in other words.
 
-We can focus on only "text" based documents, as these documents do not including images, or nor formatted data such as tables.
+We want to create a POC of a RAG focussed on Elixir/Phoenix/Plug/LiveView to help to find "precise" responses on questions about the documentation. 
+
+We want responses restricted to the context computed from Phoenix LiveView repos.
 
 
 ## Source of knowledge
