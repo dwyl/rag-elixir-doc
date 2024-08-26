@@ -17,11 +17,11 @@ RAG is about giving an additional context - the "context window" - to enhance or
 
 ## Scope of this POC:
 
-Most questions to an LLM produce halucinated responses, or in other words, invented.
+Most questions submitted to an LLM will produce halucinated responses, or in other words, invented.
 
 We want to create a POC of a RAG focussed on Elixir/Phoenix/Plug/LiveView to help to find "precise" responses on questions about the documentation. 
 
-We want responses restricted to the context computed from Phoenix LiveView repos.
+We want responses restricted to the context of the Phoenix LiveView repos.
 
 #### Example of halucination with Llama
 
@@ -78,19 +78,18 @@ The sources will be extracted from the files that the GitHub API returns when qu
     - Download "external sources" as a string
     - chunk the sources
     - produce an embedding based on a "sentence-transformer" model for each chunk
-    - insert chunk + embedding into a Vector database
-    - build an index
+    - insert chunk + embedding into a Vector database using a HSNW index
       
-  * Build a prompt that wraps your question with a semantically close context extracted from the additional sources
-    - produce an embedding from the question
-    - first vector similarity search (HNSW)
+  * Build a RAG pipeline
+    - produce an embedding (a vector representation) from the question
+    - perform a first vector similarity search (HNSW) against the database
     - rerank the top-k with "cross-encoding"
-    - inject the later result with the query into a prompt
-    - submit the prompt to the LLM
+    - build a prompt by injecting the later result with the query as a context
+    - submit the prompt to the LLM for completion
 
 ### Pseudo-code pipeline
 
-The pipeline will be:
+The pipeline will use two models
   
 ```elixir
 # Data collection and chunking
@@ -233,6 +232,7 @@ Which repos, blog post?
   - Bumblebee, RAG: <https://hexdocs.pm/bumblebee/llms_rag.html#introduction>
   - Supabase: <https://github.com/supabase-community/chatgpt-your-files>
   - Langchain: <https://github.com/brainlid/langchain_demo>
+  - <https://dockyard.com/blog/2024/05/16/retrieval-augmented-generation-what-it-is-how-to-use-it>
   - <https://github.com/nileshtrivedi/autogen>
   - <https://dockyard.com/blog/2023/05/16/open-source-elixir-alternatives-to-chatgpt>
   - <https://fly.io/phoenix-files/using-llama-cpp-with-elixir-and-rustler/>
