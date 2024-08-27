@@ -229,6 +229,7 @@ We can enhance our documentation base by accepting documents "on the fly" (downl
 ## Source of inspiration. 
 
 Which repos, blog post?
+  - <https://dockyard.com/blog/2024/05/16/retrieval-augmented-generation-what-it-is-how-to-use-it>
   - Bumblebee, RAG: <https://hexdocs.pm/bumblebee/llms_rag.html#introduction>
   - Supabase: <https://github.com/supabase-community/chatgpt-your-files>
   - Langchain: <https://github.com/brainlid/langchain_demo>
@@ -236,5 +237,4 @@ Which repos, blog post?
   - <https://github.com/nileshtrivedi/autogen>
   - <https://dockyard.com/blog/2023/05/16/open-source-elixir-alternatives-to-chatgpt>
   - <https://fly.io/phoenix-files/using-llama-cpp-with-elixir-and-rustler/>
-  - this Elixirforum post gives some directions: <https://elixirforum.com/t/rag-app-using-elixir-feasible/60439/15>
 
