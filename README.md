@@ -216,6 +216,11 @@ A Dockyard post on this: <https://dockyard.com/blog/2023/05/16/open-source-elixi
 - a comparison of different LLMs:
 <img width="592" alt="Screenshot 2024-08-14 at 17 56 40" src="https://github.com/user-attachments/assets/af4ef9ea-88f8-42bf-b963-013ea35d429f">
 
+### Pricing
+
+[![Screenshot 2024-08-28 at 21 19 41](https://github.com/user-attachments/assets/a66e8689-a7c2-46e6-a597-fb141426b9cf)](https://openai.com/api/pricing/)
+
+[![Screenshot 2024-08-28 at 21 21 51](https://github.com/user-attachments/assets/081a4b1c-579d-4801-b441-d7f14be9c76a)](https://www.anthropic.com/pricing#anthropic-api)
 
 ## Going further?
 
