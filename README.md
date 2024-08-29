@@ -60,6 +60,138 @@ or preferences (e.g., support for a particular file format or feature), you may 
 `elixir_bert` does not exist, nor `elixir_bert_embedding`, nor `elixir_glove` nor `elixir_workd2vec`. However, after researching a bit, I found `ExFinalFusion`, a NIF of `FinalFusion`.
 [![Screenshot 2024-08-24 at 19 33 08](https://github.com/user-attachments/assets/11d7daeb-8f3f-49ea-a2af-38c2c654c42d)](https://hexdocs.pm/ex_final_fusion/ExFinalFusion.html#summary)
 
+### Testing LLM
+
+The question:
+- 
+```console
+I want to code a RAG pipeline in the Elixir langugage using its ML libraries (Nx, Axon, Bumble
+bee). I want to use bi-encoded to compute embeddings from chunks of text, and then run a
+cross-encoding process. Can you recommend  models firstly for the bi-encoding and then for the
+cross-encoding step, having in mind that I need a model for tokenizing the input.
+```
+
+Some reponses with differents LLMs.
+
+- Codellama
+
+```console
+Bi-encoding (Tokenization):
+
+* BERT (Bidirectional Encoder Representations from Transformers)
+	+ This is a popular pre-trained language model that can be fine-tuned for various NLP tasks,
+including tokenization.
+	+ BERT uses a multi-layer bidirectional transformer encoder to generate contextualized
+representations of words in a sentence.
+* RoBERTa (Robustly Optimized BERT Pretraining Approach)
+	+ This is a variant of BERT that was specifically designed for text classification tasks and
+has been shown to achieve state-of-the-art results on several benchmark datasets.
+	+ RoBERTa uses a combination of tokenization and language modeling techniques to generate
+
+contextualized representations of words in a sentence.
+* DistilBERT (Distilled BERT)
+	+ This is a smaller and more efficient variant of BERT that has been trained to match the
+
+performance of the full BERT model while requiring fewer computational resources.
+	+ DistilBERT uses a combination of tokenization and attention techniques to generate
+contextualized representations of words in a sentence.
+
+Cross-encoding:
+
+* MLP (Multi-layer perceptron)
+	+ This is a simple feedforward neural network that can be used for classification tasks such
+as text classification, sentiment analysis, and topic modeling.
+	+ An MLP consists of multiple layers of artificial neurons that learn to represent the input
+data in a higher dimensional space.
+* CNN (Convolutional neural network)
+	+ This is a deep learning architecture that is particularly well-suited for text
+classification tasks where the input data has a spatial or temporal structure.
+	+ A CNN consists of multiple convolutional layers that learn to extract features from the
+
+input data, followed by pooling and fully connected layers to make predictions.
+
+It's important to note that the specific models you choose will depend on your specific use
+case and requirements. You may also want to consider using a combination of different models
+to achieve better results.
+```
+
+- Llama3
+
+```console
+**Bi-Encoding Step: Tokenization and Embedding**
+
+For tokenization, you can use a simple word tokenizer like `Nx.Tokenizer` from the Elixir
+`axon` library. However, if you need more advanced tokenization capabilities (e.g., handling
+out-of-vocabulary words), consider using Bumblebee's `Bee.Tokenizer`. For embedding the
+tokens into vectors, I recommend using:
+
+1. **Universal Sentence Encoder (USE)**: This is a pre-trained language model that can be
+used for token embedding. You can use the Elixir wrapper provided by Axon to load and use
+the USE model.
+
+**Cross-Encoding Step**
+
+For cross-encoding, you'll need to take the output of the bi-encoding step and generate a
+new representation based on it. I recommend using:
+
+1. **Reformer**: This is a state-of-the-art transformer architecture that's well-suited for
+the RAG pipeline. You can use Bumblebee to load and use the Reformer model.
+
+Here are some additional recommendations:
+
+* For tokenizing input text, you might want to consider using more advanced techniques like
+subwording (e.g., WordPiece) or character-level encoding.
+* If you're dealing with long documents, you may need to split them into smaller chunks
+before applying bi-encoding and cross-encoding. Consider using a technique like document
+chunking or summarization.
+
+To give you a better understanding of the pipeline flow, here's a high-level outline:
+
+1. **Tokenize input text**: Use `Nx.Tokenizer` or Bumblebee's `Bee.Tokenizer` to break down
+the text into individual tokens.
+2. **Bi-encode tokens**: Apply USE to embed each token into a vector space (e.g.,
+128-dimensional).
+3. **Cross-encode output**: Use Reformer to generate a new representation based on the
+bi-encoded output.
+
+Remember to preprocess your data (e.g., normalize text, remove stop words) before feeding it
+into these models.
+
+For more information and implementation details, I recommend checking out the following
+resources:
+
+* [Bumblebee documentation](https://hexdocs.pm/bumblebee/)
+* [Axon documentation](https://hexdocs.pm/axon/)
+* [Elixir ML
+libraries](https://elixir-lang.org/docs/master/libraries.html#machine-learning-libraries)
+* [RAG paper and implementation](https://arxiv.org/abs/2006.16262)
+```
+
+- Claude3.5 Sonnet
+
+```console
+Bi-encoding step:
+
+For the bi-encoding step, where you'll encode both the chunks from the documentation and the query, a good choice would be a sentence transformer model. A popular option that works well for semantic search is:
+
+Model: "sentence-transformers/all-MiniLM-L6-v2"
+
+This model provides a good balance between performance and speed. It's relatively small (80MB) but still gives good results for semantic similarity tasks.
+
+Cross-encoding step:
+
+For the cross-encoding step, where you'll want to get a more precise relevance score between the query and the retrieved documents, you could use:
+
+Model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+
+This model is specifically trained for relevance ranking and should work well for your cross-encoding needs.
+
+Tokenization:
+
+For tokenization, you'll want to use a tokenizer that matches the models you're using. Since both recommended models are based on MiniLM, you can use the MiniLM tokenizer:
+
+Tokenizer: "microsoft/MiniLM-L6-H384-uncased"
+```
 
 ## Source of knowledge
 
