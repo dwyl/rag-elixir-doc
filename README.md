@@ -20,7 +20,7 @@ RAG is about giving an additional context - the "context window" - to enhance or
 
 We want to improve the search for the Elixir/Phoenix/Plug/LiveView documentation.
 
-One way could be to have a RAG pipeline with an LLM. This is a POC of a RAG where we inject the documentation and see if this can help to find "precise" responses or help to constrain responses on questions about Elixir/Plug/Phoenix_Liveview. 
+One way could be to have a RAG pipeline with an LLM. This is a POC of a RAG where we inject pieces of the documentation related to the question, and see if this can help to find "precise" responses or help to constrain responses on questions about Elixir/Plug/Phoenix_Liveview. 
 
 
 #### Halucination
