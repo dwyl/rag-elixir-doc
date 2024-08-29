@@ -19,9 +19,8 @@ RAG is about giving an additional context - the "context window" - to enhance or
 
 Most questions submitted to an LLM will produce halucinated responses, or in other words, invented.
 
-We want to create a POC of a RAG focussed on Elixir/Phoenix/Plug/LiveView to help to find "precise" responses on questions about the documentation. 
+We want to improve the search for lixir/Phoenix/Plug/LiveView documentation. We want to create a POC of a RAG focussing on the documentation and see if this can help to find "precise" responses on questions about the documentation. 
 
-We want responses restricted to the context of the Phoenix LiveView repos.
 
 #### Example of halucination with Llama
 
