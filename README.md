@@ -17,14 +17,14 @@ RAG is about giving an additional context - the "context window" - to enhance or
 
 ## Scope of this POC:
 
-Most questions submitted to an LLM will produce halucinated responses, or in other words, invented.
 
 We want to improve the search for lixir/Phoenix/Plug/LiveView documentation. We want to create a POC of a RAG focussing on the documentation and see if this can help to find "precise" responses on questions about the documentation. 
 
 
-#### Example of halucination with Llama
+#### Halucination
 
-You can easily test LLama3.1 via `ollama run llama3.1`.
+We know that most questions submitted to an LLM will produce halucinated responses, or in other words, invented.
+Let's test this with LLama3.1, choosen because you can run it locally via `ollama run llama3.1`.
 
 ```txt
 question: "I want to use an Elixir portage of llama. Can you suggest a library?
