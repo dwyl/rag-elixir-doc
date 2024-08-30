@@ -44,7 +44,7 @@ question: which Elixir library would you suggest for text chunking to compute em
 
 <details><summary>codellama response</summary>
 
-```
+```console
 response:
 There are several Elixir libraries available for text chunking and computing embeddings, each with its own strengths and weaknesses. Here are a few popular options:
 
@@ -61,8 +61,9 @@ All of these libraries should work well for your purposes, but you may want to c
 or preferences (e.g., support for a particular file format or feature), you may want to choose the library that is most suitable for your use case.
 ```
 </details>
+<br/>
 
-`elixir_bert` does not exist, nor `elixir_bert_embedding`, nor `elixir_glove` nor `elixir_workd2vec`. However, after researching a bit, I found `ExFinalFusion`, a NIF of `FinalFusion`.
+However, `elixir_bert` does not exist, nor `elixir_bert_embedding`, nor `elixir_glove` nor `elixir_workd2vec`. However, after researching a bit, I found `ExFinalFusion`, a NIF of `FinalFusion`.
 [![Screenshot 2024-08-24 at 19 33 08](https://github.com/user-attachments/assets/11d7daeb-8f3f-49ea-a2af-38c2c654c42d)](https://hexdocs.pm/ex_final_fusion/ExFinalFusion.html#summary)
 
 ### Testing LLM
@@ -120,6 +121,7 @@ case and requirements. You may also want to consider using a combination of diff
 to achieve better results.
 ```
 </details>
+<br/>
 
 <details><summary>Llama3 response</summary>
 
@@ -172,7 +174,8 @@ resources:
 libraries](https://elixir-lang.org/docs/master/libraries.html#machine-learning-libraries)
 * [RAG paper and implementation](https://arxiv.org/abs/2006.16262)
 ```
-<details></details>
+</details>
+<br/>
 
 <details><summary>Claude3.5 Sonnet response</summary>
 
@@ -200,6 +203,7 @@ For tokenization, you'll want to use a tokenizer that matches the models you're 
 Tokenizer: "microsoft/MiniLM-L6-H384-uncased"
 ```
 </details>
+<br/>
 
 
 Having a look at these 3 responses, it seems that Claude3.5 Sonnet gives the "best" responses.
