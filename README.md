@@ -379,7 +379,7 @@ Do we run a naive chunk? or [use this package](https://github.com/revelrylabs/te
 
 ## Vector database of Index?
 
-- An index (`HNSW`)
+- An index [HNSW](https://github.com/elixir-nx/hnswlib), the Elixir portage of `hnswlib`, a KNN search,
 - or a vector database?
 	- Postgres with [pgvector](https://github.com/pgvector/pgvector) with the Elixir portage: [pgvector-elixir](https://github.com/pgvector/pgvector-elixir),
  	- SQLite with [sqlite-vec](https://github.com/asg017/sqlite-vec), but no Elixir portage currently.
