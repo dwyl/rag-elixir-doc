@@ -404,17 +404,7 @@ A Dockyard post on this: <https://dockyard.com/blog/2023/05/16/open-source-elixi
 
 #### LLama ?
 
-- A Fly.io post on using ``llama.cpp` with `Rustler`: <https://fly.io/phoenix-files/using-llama-cpp-with-elixir-and-rustler/>
-
-[![Screenshot 2024-08-24 at 18 58 16](https://github.com/user-attachments/assets/9bdc74d8-4e83-4ffc-8ac1-70a941cdf55b)](https://fly.io/phoenix-files/using-llama-cpp-with-elixir-and-rustler/)
-
-- the "ollama-ex" wrapper:
-  [<img width="974" alt="Screenshot 2024-08-23 at 17 21 44" src="https://github.com/user-attachments/assets/cd86b1c3-9bdb-46cb-a4df-20cf34604380">](https://hexdocs.pm/ollama/Ollama.html)
-
-- ExLLama: LlammaCpp.rs NIF wrapper for Elixir/Erlang:
-[![Screenshot 2024-08-24 at 18 58 28](https://github.com/user-attachments/assets/8b7194ce-4ecf-4c84-87d7-395d3100a276)](https://hexdocs.pm/ex_llama/readme.html)
-
-- a comparison of different LLMs:
+A comparison of different LLMs (source: Anthropic)
 <img width="592" alt="Screenshot 2024-08-14 at 17 56 40" src="https://github.com/user-attachments/assets/af4ef9ea-88f8-42bf-b963-013ea35d429f">
 
 ### Pricing
@@ -436,6 +426,7 @@ We can enhance our documentation base by accepting documents "on the fly" (downl
 
 Which repos, blog post?
   - <https://dockyard.com/blog/2024/05/16/retrieval-augmented-generation-what-it-is-how-to-use-it>
+  - using the cross-encoder: <https://github.com/elixir-nx/bumblebee/issues/251>
   - Bumblebee, RAG: <https://hexdocs.pm/bumblebee/llms_rag.html#introduction>
   - Supabase: <https://github.com/supabase-community/chatgpt-your-files>
   - Langchain: <https://github.com/brainlid/langchain_demo>
@@ -443,4 +434,8 @@ Which repos, blog post?
   - <https://github.com/nileshtrivedi/autogen>
   - <https://dockyard.com/blog/2023/05/16/open-source-elixir-alternatives-to-chatgpt>
   - <https://fly.io/phoenix-files/using-llama-cpp-with-elixir-and-rustler/>
+  -  A Fly.io post on using ``llama.cpp` with `Rustler`: <https://fly.io/phoenix-files/using-llama-cpp-with-elixir-and-rustler/> 
+  -  ExLLama: LlammaCpp.rs NIF wrapper for Elixir/Erlang: <https://hexdocs.pm/ex_llama/readme.html> and <https://fly.io/phoenix-files/using-llama-cpp-with-elixir-and-rustler/>
+  -  ollama-ex to run LLM locally: <https://hexdocs.pm/ollama/Ollama.html>
+  -  
 
