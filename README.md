@@ -374,20 +374,19 @@ Do we run a naive chunk? or [use this package](https://github.com/revelrylabs/te
 
 ## Which embedding? 
 
-- [SBert](https://www.sbert.net/),
-- or as in [this video](https://www.youtube.com/watch?v=ibzlEQmgPPY) uses "GT-SMALL" (from Alibaba)
-- or "sentence-transformer". Check: <https://huggingface.co/spaces/mteb/leaderboard>.
+- [SBert](https://www.sbert.net/): check: <https://huggingface.co/spaces/mteb/leaderboard>.
 
-We opted for "sentence-transformer".
 
 ## Vector database of Index?
 
 - An index (`HNSW`)
-- or a vector database? Postgres with PGVector,
-- or [Supabase](https://github.com/supabase/supabase),
-- or [ChromaDB](https://github.com/3zcurdia/chroma)?
+- or a vector database?
+	- Postgres with [pgvector](https://github.com/pgvector/pgvector) with the Elixir portage: [pgvector-elixir](https://github.com/pgvector/pgvector-elixir),
+ 	- SQLite with [sqlite-vec](https://github.com/asg017/sqlite-vec), but no Elixir portage currently.
+	- or [Supabase](https://github.com/supabase/supabase), with an [Elixir client](https://github.com/zoedsoupe/supabase-ex)
+	- or [ChromaDB](https://github.com/3zcurdia/chroma), with an [Elixir client](https://github.com/3zcurdia/chroma)
 
-We will use Postgres with the extension PG_Vector and the HNSWL algorithm. See discussion on the Postgres + pg_vector setup.
+We will use Postgres with the extension `pgvector` and the `HNSW` algorithm. See discussion on the Postgres + pg_vector setup.
   
 ## How to **prompt**? 
 
