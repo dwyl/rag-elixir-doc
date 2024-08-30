@@ -398,11 +398,9 @@ The LLM should be able to generate an "accurate" response constrainted by this c
 
 Our main problem will be halucination, in other words, the LLM invents the response.
 
-The LLM could be OpenAI ChatGPT 3.5/4? Meta Llama? Mistral? Anthropic Claude 3.5 Sonnet? , Google T5?
+The LLM could be OpenAI ChatGPT? Meta Llama? Mistral? Anthropic Claude 3.5 Sonnet? , Google T5?
 
 A Dockyard post on this: <https://dockyard.com/blog/2023/05/16/open-source-elixir-alternatives-to-chatgpt>.
-
-#### LLama ?
 
 A comparison of different LLMs (source: Anthropic)
 <img width="592" alt="Screenshot 2024-08-14 at 17 56 40" src="https://github.com/user-attachments/assets/af4ef9ea-88f8-42bf-b963-013ea35d429f">
@@ -417,9 +415,11 @@ A comparison of different LLMs (source: Anthropic)
 
 This POC is expected to be run **only locally** (no deploy, mainly because of the costs).
 
-Can we measure our performance?
-
 We can enhance our documentation base by accepting documents "on the fly" (download a given link).
+
+Add Full-Text-Search?
+
+Can we measure our performance?
 
 
 ## Source of inspiration. 
@@ -437,5 +437,5 @@ Which repos, blog post?
   -  A Fly.io post on using ``llama.cpp` with `Rustler`: <https://fly.io/phoenix-files/using-llama-cpp-with-elixir-and-rustler/> 
   -  ExLLama: LlammaCpp.rs NIF wrapper for Elixir/Erlang: <https://hexdocs.pm/ex_llama/readme.html> and <https://fly.io/phoenix-files/using-llama-cpp-with-elixir-and-rustler/>
   -  ollama-ex to run LLM locally: <https://hexdocs.pm/ollama/Ollama.html>
-  -  
+    
 
