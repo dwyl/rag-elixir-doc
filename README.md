@@ -23,9 +23,14 @@ We want to improve the search for the Elixir/Phoenix/Plug/LiveView documentation
 One way could be to have a RAG pipeline with an LLM. This is a POC of a RAG where we inject a context with pieces of the documentation related to the question, and see if this can help to find "precise" responses or help to constrain responses on questions about Elixir/Plug/Phoenix_Liveview. 
 
 
-#### Halucination
+## Using LLM to find which models to use
 
-We know that most questions submitted to an LLM will produce halucinated responses, or in other words, invented.
+We are using pre-trained NR models. We will use LLMs to help us decide which one to use.
+
+### Halucination
+
+We know that most questions submitted to an LLM will produce so-called "halucinated" responses, or in other words, invented.
+
 Let's test this with LLama3.1, choosen because you can run it locally via `ollama run llama3.1`.
 
 ```txt
@@ -68,7 +73,7 @@ We check that `elixir_bert` does not exist, nor `elixir_bert_embedding`, nor `el
 However, after researching a bit, the library `ExFinalFusion` exists, a NIF of `FinalFusion`.
 [![Screenshot 2024-08-24 at 19 33 08](https://github.com/user-attachments/assets/11d7daeb-8f3f-49ea-a2af-38c2c654c42d)](https://hexdocs.pm/ex_final_fusion/ExFinalFusion.html#summary)
 
-### Testing LLM to choose the models
+### Let the LLMs choose the models
 
 The question:
 
