@@ -63,10 +63,10 @@ or preferences (e.g., support for a particular file format or feature), you may 
 ### Testing LLM
 
 The question:
-- 
+
 ```console
 I want to code a RAG pipeline in the Elixir langugage using its ML libraries (Nx, Axon, Bumble
-bee). I want to use bi-encoded to compute embeddings from chunks of text, and then run a
+bee). I want to use a bi-encoder to compute embeddings from chunks of text, and then run a
 cross-encoding process. Can you recommend  models firstly for the bi-encoding and then for the
 cross-encoding step, having in mind that I need a model for tokenizing the input.
 ```
