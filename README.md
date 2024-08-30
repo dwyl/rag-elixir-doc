@@ -63,10 +63,12 @@ or preferences (e.g., support for a particular file format or feature), you may 
 </details>
 <br/>
 
-However, `elixir_bert` does not exist, nor `elixir_bert_embedding`, nor `elixir_glove` nor `elixir_workd2vec`. However, after researching a bit, I found `ExFinalFusion`, a NIF of `FinalFusion`.
+We check that `elixir_bert` does not exist, nor `elixir_bert_embedding`, nor `elixir_glove` nor `elixir_workd2vec`. 
+
+However, after researching a bit, the library `ExFinalFusion` exists, a NIF of `FinalFusion`.
 [![Screenshot 2024-08-24 at 19 33 08](https://github.com/user-attachments/assets/11d7daeb-8f3f-49ea-a2af-38c2c654c42d)](https://hexdocs.pm/ex_final_fusion/ExFinalFusion.html#summary)
 
-### Testing LLM
+### Testing LLM to choose the models
 
 The question:
 
@@ -205,12 +207,56 @@ Tokenizer: "microsoft/MiniLM-L6-H384-uncased"
 </details>
 <br/>
 
+<details><summary>ChatGPT response</summary>
 
-Having a look at these 3 responses, it seems that Claude3.5 Sonnet gives the "best" responses.
+```console
+To create a Retrieval-Augmented Generation (RAG) pipeline in Elixir using the Nx, Axon, and Bumblebee libraries, you'll need to carefully choose models that are suitable for both the bi-encoding and cross-encoding processes. Let's break down the components:
 
-However, Claude3.5 Sonnet can only be reached via the Anthropic API.
+1. Bi-Encoder Step:
+Purpose: The bi-encoder step involves encoding chunks of text independently to generate embeddings that can be used for retrieval.
+Recommended Models:
+MiniLM (Microsoft): A small, efficient model designed for sentence embeddings. It's often used for bi-encoder tasks due to its balance between speed and accuracy.
+DistilBERT: A smaller and faster version of BERT, ideal for generating embeddings from text while maintaining a good balance of performance.
+Sentence-BERT (SBERT): This is a modification of BERT that is specifically designed for creating dense vector representations of sentences, making it a solid choice for bi-encoding.
+2. Cross-Encoder Step:
+Purpose: The cross-encoder step involves comparing the query and retrieved passages together, typically used to re-rank the retrieved results.
+Recommended Models:
+BERT: The standard BERT model is highly effective for cross-encoding tasks because it considers the interaction between the query and the passage.
+RoBERTa: A variant of BERT with more robust training, which tends to perform better in NLP tasks.
+DeBERTa: Known for its improved handling of word order and dependency information, making it a strong candidate for cross-encoding.
+3. Tokenization:
+Purpose: Tokenizing the input is crucial for both the bi-encoder and cross-encoder steps. The tokenizer needs to be compatible with the chosen models.
+Recommended Tokenizers:
+BERT Tokenizer: Compatible with BERT-based models (BERT, RoBERTa, DistilBERT, etc.).
+SentencePiece Tokenizer: Often used with models like MiniLM and other transformer-based models.
+Elixir Implementation:
+Libraries:
+Nx: For numerical computation, handling tensors, and integrating with the underlying ML operations.
+Axon: For building neural networks, including the bi-encoder and cross-encoder models.
+Bumblebee: For pre-trained models, including tokenizers and transformers, which will help with the embedding and cross-encoding tasks.
+Example Models in Bumblebee:
+For bi-encoding: Use models like "MiniLM-L6-v2" or "distilbert-base-uncased" from Bumblebee.
+For cross-encoding: Use models like "bert-base-uncased" or "roberta-base".
+Steps to Implement:
+Load the Model: Use Bumblebee to load the bi-encoder and cross-encoder models.
+Tokenize the Input: Tokenize the text using the appropriate tokenizer.
+Compute Embeddings: Generate embeddings using the bi-encoder model.
+Retrieve and Rank: Use the cross-encoder model to compare and rank the retrieved documents.
+```
+</details>
 
-We will use LLama by running it locally, at no costs.
+Having a look at these 3 responses, it seems that Claude3.5 Sonnet and ChatGTP give the "best" responses.
+
+However, both Anthropic and OpenAI do require an API keys.
+
+### Conclusion for the choice of our models
+
+We will use SBERT based models:
+- the bi-encoder"sentence-transformers/all-MiniLM-l6-v2" which also provides a tokenizer,
+- the cross-encoder "cross-encoder/ms-marco-MiniLM-L-6-v2" along with the tokenizer "bert-base-uncased"
+
+For the LLM, we will use LLama by running it locally, at no costs.
+
 
 ## Source of knowledge
 
