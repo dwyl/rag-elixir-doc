@@ -382,7 +382,7 @@ Do we run a naive chunk? or [use this package](https://github.com/revelrylabs/te
 - An index [HNSW](https://github.com/elixir-nx/hnswlib), the Elixir portage of `hnswlib`, a KNN search,
 - or a vector database?
 	- Postgres with [pgvector](https://github.com/pgvector/pgvector) with the Elixir portage: [pgvector-elixir](https://github.com/pgvector/pgvector-elixir),
- 	- SQLite with [sqlite-vec](https://github.com/asg017/sqlite-vec), but no Elixir portage currently.
+ 	- SQLite with [sqlite-vec](https://github.com/asg017/sqlite-vec). The extension has to be installed manually from the repo and loaded (with `exqlite`),
 	- or [Supabase](https://github.com/supabase/supabase), with an [Elixir client](https://github.com/zoedsoupe/supabase-ex)
 	- or [ChromaDB](https://github.com/3zcurdia/chroma), with an [Elixir client](https://github.com/3zcurdia/chroma)
 
