@@ -27,7 +27,7 @@ One way could be to have a RAG pipeline with an LLM. This is a POC of a RAG wher
 
 We are using pre-trained NR models. We will use LLMs to help us decide which one to use.
 
-### Halucination
+### A word on halucination
 
 We know that most questions submitted to an LLM will produce so-called "halucinated" responses, or in other words, invented.
 
@@ -252,7 +252,6 @@ Retrieve and Rank: Use the cross-encoder model to compare and rank the retrieved
 
 Having a look at these 3 responses, it seems that Claude3.5 Sonnet and ChatGTP give the "best" responses.
 
-However, both Anthropic and OpenAI do require an API keys.
 
 ### Conclusion for the choice of our models
 
@@ -260,7 +259,7 @@ We will use SBERT based models:
 - the bi-encoder"sentence-transformers/all-MiniLM-l6-v2" which also provides a tokenizer,
 - the cross-encoder "cross-encoder/ms-marco-MiniLM-L-6-v2" along with the tokenizer "bert-base-uncased"
 
-For the LLM, we will use LLama by running it locally, at no costs.
+For the LLM, we will use LLama as we can run it locally, at no costs, and because both Anthropic and OpenAI require an API key. If we want a better response, then we know we need to use paid LLMs.
 
 
 ## Source of knowledge
