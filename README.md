@@ -1,6 +1,6 @@
 # rag-elixir-doc
 
-<h1 align="center">Building....</h1>
+<h1 align="center">Building with the help of LLMs....</h1>
 
 ## What is `RAG`?
 
