@@ -40,7 +40,11 @@ I tried CodeLLama: `ollama run codellama`:
 
 ```txt
 question: which Elixir library would you suggest for text chunking to compute embeddings efficiently?
+```
 
+<details><summary>codellama response</summary>
+
+```
 response:
 There are several Elixir libraries available for text chunking and computing embeddings, each with its own strengths and weaknesses. Here are a few popular options:
 
@@ -56,6 +60,7 @@ It provides a simple and efficient interface for computing embeddings, and it su
 All of these libraries should work well for your purposes, but you may want to consider which one best fits your specific needs. If you have any specific requirements
 or preferences (e.g., support for a particular file format or feature), you may want to choose the library that is most suitable for your use case.
 ```
+</details>
 
 `elixir_bert` does not exist, nor `elixir_bert_embedding`, nor `elixir_glove` nor `elixir_workd2vec`. However, after researching a bit, I found `ExFinalFusion`, a NIF of `FinalFusion`.
 [![Screenshot 2024-08-24 at 19 33 08](https://github.com/user-attachments/assets/11d7daeb-8f3f-49ea-a2af-38c2c654c42d)](https://hexdocs.pm/ex_final_fusion/ExFinalFusion.html#summary)
@@ -73,7 +78,7 @@ cross-encoding step, having in mind that I need a model for tokenizing the input
 
 Some reponses with differents LLMs.
 
-- Codellama
+<details><summary>codellama response</summary>
 
 ```console
 Bi-encoding (Tokenization):
@@ -114,8 +119,9 @@ It's important to note that the specific models you choose will depend on your s
 case and requirements. You may also want to consider using a combination of different models
 to achieve better results.
 ```
+</details>
 
-- Llama3
+<details><summary>Llama3 response</summary>
 
 ```console
 **Bi-Encoding Step: Tokenization and Embedding**
@@ -166,8 +172,9 @@ resources:
 libraries](https://elixir-lang.org/docs/master/libraries.html#machine-learning-libraries)
 * [RAG paper and implementation](https://arxiv.org/abs/2006.16262)
 ```
+<details></details>
 
-- Claude3.5 Sonnet
+<details><summary>Claude3.5 Sonnet response</summary>
 
 ```console
 Bi-encoding step:
@@ -192,6 +199,14 @@ For tokenization, you'll want to use a tokenizer that matches the models you're 
 
 Tokenizer: "microsoft/MiniLM-L6-H384-uncased"
 ```
+</details>
+
+
+Having a look at these 3 responses, it seems that Claude3.5 Sonnet gives the "best" responses.
+
+However, Claude3.5 Sonnet can only be reached via the Anthropic API.
+
+We will use LLama by running it locally, at no costs.
 
 ## Source of knowledge
 
