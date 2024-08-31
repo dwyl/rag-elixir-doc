@@ -10,7 +10,7 @@ All the tools used here are "free", meaning everything is running locally.
 
 ## What is `RAG`?
 
-It is "chat with your documents", meaning you ask an LLM model to respond based on additional ressources.
+It is a "chat with your documents" process, meaning you ask an LLM model to respond based on additional ressources.
 
 Theses sources may or may not be already incorporated inside the training used for the LLM.
 
@@ -23,7 +23,7 @@ RAG is about giving an additional context - the "context window" - to enhance or
 
 ## Scope of this POC:
 
-We want to improve the LLm's response when asking questions related to the Elixir/Phoenix/Plug/LiveView documentation. We will build a "context" to add information to help the LLM build a response.
+We want to improve the LLm's response when we ask questions related to the Elixir/Phoenix/Plug/LiveView documentation. We will build a "context" to add information to help the LLM to build a response.
 
 Running such a helper locally means that we need to have the extra ressources available locally. Our database will be local and our LLM will be run locally, using only local ressources.
 
@@ -32,7 +32,7 @@ We will extract some markdown files from the Phoenix_LiveView GitHub repo.
 We will use a database to store chunks extracted from these files.
 
 
-- One way is SQL Full-Text-Search. If we use `Postgres`, we have a [built-in functionality](https://www.postgresql.org/docs/current/textsearch-intro.html#TEXTSEARCH-DOCUMENT). This works by using ** key words**, so given that we may have various ways to express the same questions, we may want a more semantic search.
+- One way is **SQL Full-Text-Search**. If we use `Postgres`, we have a [built-in functionality](https://www.postgresql.org/docs/current/textsearch-intro.html#TEXTSEARCH-DOCUMENT). This works by using ** key words**, so given that we may have various ways to express the same questions, we may want a more semantic search.
 
 - We can also use the open source version of "elastisearch" by Amazon named `opensearch` via a Docker image. We may also use the [local image of ElastiSearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/run-elasticsearch-locally.html). There exists [Text Chunking tools](https://opensearch.org/docs/latest/search-plugins/text-chunking/). This might be an interesting extension to our current effort given that an Opensearch client exists: [snap](https://github.com/breakroom/snap)
 
@@ -45,7 +45,7 @@ We are using pre-trained NR models. We will also use an LLM to elaborate a respo
 
 The first question is: what does a RAG pipeline brings?
 
-We believe the next two paragraphs gives some confidence that this technic works, or least improves some responses.
+We believe the next two paragraphs give some confidence that this technic works, or at least improves some responses.
 
 ### Testing Codellama
 
@@ -201,7 +201,7 @@ We continue but know we are seeking for some help:
 
 <details><summary>We ask LLMs which embedding models to use. Some examples of how LLMs respond to this question</summary>
 
-We know that most questions submitted to an LLM will produce so-called "halucinated" responses, or in other words, invented.
+We know that most questions that are submitted to an LLM will produce so-called "halucinated" responses, or in other words, invented.
 
 Let's test this with LLama3.1, choosen because you can run it locally via `ollama run llama3.1`.
 
@@ -429,7 +429,7 @@ Retrieve and Rank: Use the cross-encoder model to compare and rank the retrieved
 
 It seems that Claude3.5 Sonnet and ChatGTP give much "better" responses than Llama. However, we need an API to reach their REST API whilst we can run la local version of the LLama LLM. 
 
-We will therefor choose LLama, running it at no cost, knowing that it can only get better by choosing a "paid" version with OpenAI or better Anthropic.
+We will therefore choose LLama, running it at no cost, knowing that it can only get better by choosing a "paid" version with OpenAI or better Anthropic.
 
 ### Conclusion for the choice of our models
 
