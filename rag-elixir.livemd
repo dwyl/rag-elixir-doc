@@ -129,6 +129,7 @@ Note that you can also use the Postgres adaptor [Postgrex](https://github.com/el
 
 <details>
 <summary>Postgrex code without Ecto</summary>
+  
 ```elixir
 {:ok, pg} = Postgrex.start_link(
   username: "postgres",
