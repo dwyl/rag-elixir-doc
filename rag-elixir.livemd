@@ -529,7 +529,7 @@ We run the "codellama" model via the `ollama` plateform
 ### LLama CLI
 
 <details>
-<summary>Install and run ollama</summary>
+<summary>Install and start ollama server</summary>
   
 We install `ollama` (see [the repo](https://github.com/ollama/ollama/tree/main)) to install de "codellama" LLM.
 
@@ -577,15 +577,13 @@ We check that `ollama` is running:
 lsof -i -P | grep LISTEN | grep 11434
 ```
 
-<!-- livebook:{"break_markdown":true} -->
+## Generate a response via the LLama REST API and Elixir
 
-The Livebook can run a **POST** request with `Req` and pass a json to the `:json` key.
+The Livebook runs a **POST** request with `Req` and pass a json to the `:json` key.
 
 As per the [documentation](https://hexdocs.pm/req/Req.Steps.html#encode_body/1-request-options), it does `Jason.encode_to_iodata(%{model: "codellama", "prompt": "..."})` and sets the adequate headers.
 
 Note that we need to increase the socket timeout above the default 5000.
-
-## Generate a response via the LLama REST API and Elixir
 
 ```elixir
 prompt = RAG.PromptBuilder.build_prompt(query, context)
