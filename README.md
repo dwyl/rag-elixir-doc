@@ -195,11 +195,12 @@ The `phx-change` event will trigger the `email_changed` function on the `@myself
 </details>
 <br/>
 
-The first conclusion is that thee RAG pipeline improve a lot the response, most probably because the current version of the LLM (July 2024) is not up-to-date with the current state-of-art.
+The first conclusion is that the RAG pipeline improves a lot the response.
+This happens also because most probablythe current version of the LLM (July 2024) is not up-to-date with the current state-of-art at the time of writting.
 
-We continue but know we are seeking for some help:
+We continue by asking the LLM to help us with the technical task below. We encounter the main limitation: halucination.
 
-<details><summary>We ask LLMs which embedding models to use. Some examples of how LLMs respond to this question</summary>
+<details><summary>Which embedding models can we use? Some examples of how LLMs respond to this question</summary>
 
 We know that most questions that are submitted to an LLM will produce so-called "halucinated" responses, or in other words, invented.
 
