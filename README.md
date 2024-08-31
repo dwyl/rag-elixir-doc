@@ -2,9 +2,13 @@
 
 <h1 align="center">Building LLM enhanced search with the help of LLMs....</h1>
 
+We want to improve the search for the Elixir/Phoenix/Plug/LiveView documentation when using an LLM and experiment a `RAG` pipeline.
+
+All the tools used here are "free", meaning we will having everything running locally.
+
 ## What is `RAG`?
 
-It is "chat with your documents", meaning you ask an LLM model to respond based on additional sources.
+It is "chat with your documents", meaning you ask an LLM model to respond based on additional ressources.
 
 Theses sources may or may not be already incorporated inside the training used for the LLM.
 
@@ -17,17 +21,184 @@ RAG is about giving an additional context - the "context window" - to enhance or
 
 ## Scope of this POC:
 
+We want to improve the LLm's response when asking questions related to the Elixir/Phoenix/Plug/LiveView documentation. We will build a "context" to add information to help the LLM build a response.
 
-We want to improve the search for the Elixir/Phoenix/Plug/LiveView documentation.
+Running such a helper locally means that we need to have the extra ressources available locally. Our database will be local and our LLM will be run locally, using only local ressources.
 
-One way could be to have a RAG pipeline with an LLM. This is a POC of a RAG where we inject a context with pieces of the documentation related to the question, and see if this can help to find "precise" responses or help to constrain responses on questions about Elixir/Plug/Phoenix_Liveview. 
+We will extract some markdown files from the Phoenix_LiveView GitHub repo.
+
+We will use a database to store chunks extracted from these files.
+
+
+- One way is SQL Full-Text-Search. If we use `Postgres`, we have a [built-in functionality](https://www.postgresql.org/docs/current/textsearch-intro.html#TEXTSEARCH-DOCUMENT). This works by using ** key words**, so given that we may have various ways to express the same questions, we may want a more semantic search.
+
+- We can also use the open source version of "elastisearch" by Amazon named `opensearch` via a Docker image. We may also use the [local image of ElastiSearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/run-elasticsearch-locally.html). There exists [Text Chunking tools](https://opensearch.org/docs/latest/search-plugins/text-chunking/). This might be an interesting extension to our current effort.
+
+- we can build a RAG pipeline with an LLM. We follow this route here. We save chunks with their embedding into a database, run a similarity search against our query, and then rerank our top-k reponses, and finally use the last reponse to build our prompt and submit it as a context to the LLM. This will help to constrain responses on questions about Elixir/Plug/Phoenix_Liveview. 
 
 
 ## Using LLM to find which models to use
 
-We are using pre-trained NR models. We will use LLMs to help us decide which one to use.
+We are using pre-trained NR models. We will also use an LLM to elaborate a response. 
+
+The first question is: what does a RAG pipeline brings?
+
+We believe the next two paragraphs gives some confidence that this technic works, or least improves some responses.
+
+### Testing Codellama
+
+```text
+Question: "how to handle forms server-side?"
+```
+
+#### The "raw" response
+
+
+Handling forms on the server-side involves using the `Phoenix.HTML` module's `form_for` function to create a form struct with the necessary information for submitting the form data to the server.
+Here's an example:
+
+```elixir
+import Phoenix.HTML
+
+# Create a form struct with the necessary information
+form = form_for(conn, :action, :controller)
+
+# Add fields to the form using the `add_field` function
+form = form |> add_field(:name, :text) |> add_field(:age, :number)
+
+# Use the `handle_event` function to handle form submissions
+handle_event(form, :submit, conn) do
+  # Do something with the submitted data here, e.g. update a database
+end
+```
+
+The `form_for` function takes three arguments:
+
+	* `conn`: The current connection struct
+	* `action`: The action to perform when submitting the form(e.g. `:create`, `:update`, etc.)
+	* `controller`: The controller that handles the form submission
+
+Once you have created the form struct, you can add fields to it using the `add_field` function.
+This function takes two arguments:
+
+	* `name`: The name of the field (e.g. `:username`,`:password`, etc.)
+	* `type`: The type of field (e.g. `:text`, `:number`, etc.)
+
+You can then use the `handle_event` function to handle form submissions. This function takes three arguments:
+
+	* `form`: The form struct that was created using the `form_for` function
+	* `event`: The event that triggered the submission (e.g. `:submit`, etc.)
+	* `conn`: The current connection struct
+
+Inside the `handle_event` function, you can perform any necessary actions when the form is submitted, such as updating a database or sending an email.
+
+To handle form validation and error handling, you can use the `Phoenix.LiveView` module's `validate` and `error` functions.
+
+For example:
+
+```elixir
+import Phoenix.LiveView
+
+# Add validation rules to the form using the `validate` function
+form = form |> validate(:name, :required) |> validate(:age, :number)
+
+# Handle errors in the form submission using the `error` function
+handle_event(form, :submit, conn) do
+  if error?(conn) do
+    # Do something with the validation errors here, e.g. display an error message
+  else
+    # Do something with the submitted data here, e.g. update a database
+  end
+end
+```
+
+In this example, we use the `validate` function to add validation rules to the form. The `:required` and `:number` arguments specify that the fields should be required and contain only numbers, respectively.
+If there are any errors in the submitted data, the `error?` function will return true and we can handle them using the `error` function.
+
+
+#### The "RAGed" response
+
+To handle forms with LiveView, you can use the `Phoenix.Component` module and its functions to define a form component that will submit and validate the form data using LiveView's built-in validation mechanism. Here's an example of how to define a form component in your LiveView:
+
+```elixir
+defmodule MyAppWeb.Components.Form do
+  use Phoenix.Component
+  def form(assigns) do
+    ~H"""
+      <.form for={@form} phx-change="validate" phx-submit="save">\
+        ...
+      </.form>
+    """
+    end
+  end
+...
+```
+
+In the above example, we define a `Form` component that renders a form tag with a `phx-change` and `phx-submit` event to handle validation and submission of the form data. The `for` attribute is used to bind the form to a changeset or user parameters, which can be created from a form struct using `Phoenix.Component.to_form/1`.
+
+You may also take advantage of LiveView's CSS loading state classes to swap out your form content while the form is submitting. For example, with the following rules in your `app.css`:
+
+```css
+.while-submitting { display: none; }
+.inputs { display: block; }
+
+.phx-submit-loading .while-submitting { display: block; }
+  
+.phx-submit-loading .inputs { display: none; }
+```
+
+You can show and hide content with the following markup:
+
+```elixir
+<.form for={@form} phx-change="validate" phx-submit="save">
+  <div class="while-submitting">Please wait while we save our content...</div>
+  <div class="inputs">
+    <input type="text" name="text" value={@text}>
+</div>
+</.form>
+```
+
+Additionally, we strongly recommend including a unique HTML "id" attribute on the form. When DOM siblings change, elements without an ID will be replaced rather than moved, which can cause issues such as form fields losing focus.
+
+You may wish for an individual input to use its own change event or to target a different component. This can be accomplished by annotating the input itself with `phx-change`, for example:
+
+```elixir
+<.form for={@form} phx-change="validate" phx-submit="save">
+  ...
+  <.input field={@form[:email]}  phx-change="email_changed" phx-target={@myself} />
+</.form>
+```
+
+The `phx-change` event will trigger the `email_changed` function on the `@myself` component, which can be used to update the form data or perform other actions based on changes to the input field.
+
+You may also wish for an individual input to use its own change event or to target a different component. This can be accomplished by annotating the input itself with `phx-change`, for example:
+
+```elixir
+<.form for={@form} phx-change="validate" phx-submit="save">
+  ...
+  <.input field={@form[:email]}  phx-change="email_changed" phx-target={@myself} />
+</.form>
+```
+
+The `phx-change` event will trigger the `email_changed` function on the `@myself` component, which can be used to update the form data or perform other actions based on changes to the input field.\n\nIt's also important to note that you may want to use a unique HTML \"id\" attribute on the form. When DOM siblings change, elements without an ID will be replaced rather than moved, which can cause issues such as form fields losing focus.\n\nYou may also wish for an individual input to use its own change event or to target a different component. This can be accomplished by annotating the input itself with `phx-change`, for example:
+
+```elixir
+<.form for={@form} phx-change="validate" phx-submit="save">
+  ...
+  <.input field={@form[:email]}  phx-change="email_changed" phx-target={@myself} />
+</.form>
+```
+
+The `phx-change` event will trigger the `email_changed` function on the `@myself` component, which can be used to update the form data or perform other actions based on changes to the input field.
+
+
+#### First conclusion
+
+The RAG pipeline improve a lot the response, most probably because the current version of the LLM (July 2024) is not up-to-date with the current state-of-art.
 
 ### A word on halucination
+
+<details><summary>We ask LLMs which embedding models to use. Some examples of how LLMs respond to this question</summary>
 
 We know that most questions submitted to an LLM will produce so-called "halucinated" responses, or in other words, invented.
 
@@ -250,16 +421,20 @@ Retrieve and Rank: Use the cross-encoder model to compare and rank the retrieved
 ```
 </details>
 
-Having a look at these 3 responses, it seems that Claude3.5 Sonnet and ChatGTP give the "best" responses.
 
+</details>
+
+### First conclusion for the LLM
+
+It seems that Claude3.5 Sonnet and ChatGTP give much "better" responses than Llama. However, we need an API to reach their REST API whilst we can run la local version of the LLama LLM. 
+
+We will therefor choose LLama, running it at no cost, knowing that it can only get better by choosing a "paid" version with OpenAI or better Anthropic.
 
 ### Conclusion for the choice of our models
 
 We will use SBERT based models:
 - the bi-encoder"sentence-transformers/all-MiniLM-l6-v2" which also provides a tokenizer,
 - the cross-encoder "cross-encoder/ms-marco-MiniLM-L-6-v2" along with the tokenizer "bert-base-uncased"
-
-For the LLM, we will use LLama as we can run it locally, at no costs, and because both Anthropic and OpenAI require an API key. If we want a better response, then we know we need to use paid LLMs.
 
 
 ## Source of knowledge
