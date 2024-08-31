@@ -4,7 +4,7 @@
 
 We want to improve the search for the Elixir/Phoenix/Plug/LiveView documentation when using an LLM and experiment a `RAG` pipeline.
 
-All the tools used here are "free", meaning we will having everything running locally.
+All the tools used here are "free", meaning everything is running locally.
 
 ## What is `RAG`?
 
