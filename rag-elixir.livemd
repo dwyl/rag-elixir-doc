@@ -1,0 +1,946 @@
+# RAG Elixir Phoenix Liveview documentation
+
+```elixir
+Mix.install(
+  [
+    {:req, "~> 0.5.6"},
+    {:bumblebee, "~> 0.5.3"},
+    {:ollama, "~> 0.7.1"},
+    {:text_chunker, "~> 0.3.1"},
+    {:postgrex, "~> 0.19.1"},
+    {:pgvector, "~> 0.3.0"},
+    {:ecto_sql, "~> 3.12"},
+    {:exla, "~> 0.7.3"},
+    {:kino_bumblebee, "~> 0.5.0"},
+  ],
+  config: [nx: [default_backend: EXLA.Backend]]
+)
+
+Nx.Defn.global_default_options(compiler: EXLA, client: :host)
+```
+
+## Vector extension to Postgres with Docker
+
+### 1) pgvector
+
+To add the [pgvector](https://github.com/pgvector/pgvector) extension to your `PostgreSQL` container, you'll need to use a `PostgreSQL` image that includes this extension.
+
+The official PostgreSQL image doesn't include `pg_vector` by default, so we'll extend the Postgres image and build use a custom image that has the extension pgvector pre-installed.
+
+Create a Dockerfile with the following content:
+
+<!-- livebook:{"break_markdown":true} -->
+
+```dockerfile
+FROM postgres:16
+
+RUN apt-get update && apt-get install -y \
+    git \
+    build-essential \
+    postgresql-server-dev-16
+
+RUN git clone https://github.com/pgvector/pgvector.git && \
+    cd pgvector && \
+    make && \
+    make install
+
+CMD ["postgres"]
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+Build the custom image named "postgres-with-vector": we have a **1.5Gb** image.
+
+<!-- livebook:{"break_markdown":true} -->
+
+```bash
+> docker build -t postgres-with-vector .
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+Run a container in detached mode named "postgres-rag" from this custom "postgres-with-vector" image, create the database "rag_example", and open the port 5432 for the Elixir backend to be  able to connect to:
+
+<!-- livebook:{"break_markdown":true} -->
+
+```console
+> docker run \
+   -d --rm \
+   --name postgres-rag \
+   -e POSTGRES_PASSWORD=secret \
+   -e POSTGRES_DB=rag_example \
+   -p 5432:5432 \
+   postgres-with-vector
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+Check the logs:
+
+<!-- livebook:{"break_markdown":true} -->
+
+```console
+> docker logs postgres-rag
+
+LOG:  database system is ready to accept connections
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+In another terminal, connect to the running "postgres-rag" container and execute `psql` on the "rag_example" database:
+
+```console
+> docker exec -it postgres-rag psql -U postgres -d rag_example
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+We execute the `psql` CLI in the container (with the default username "postgres" and password as above) to connect to the database "rag_example":
+
+<!-- livebook:{"break_markdown":true} -->
+
+```bash
+rag_example=#
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+### 2) Use an Ecto.Repo
+
+<!-- livebook:{"break_markdown":true} -->
+
+The extension will define a custom type:
+
+```elixir
+Postgrex.Types.define(
+  RAG.PostgrexTypes, 
+  Pgvector.extensions() ++ Ecto.Adapters.Postgres.extensions(), 
+  []
+)
+```
+
+You can use the Postgres adaptor [Postgrex](https://github.com/elixir-ecto/postgrex) directly with raw SQL commands.
+
+<!-- livebook:{"break_markdown":true} -->
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+{:ok, pg} = Postgrex.start_link(
+  username: "postgres",
+  password: "secret", 
+  database: "rag_example", 
+  type: "RAG.PostgrexTypes"
+)
+
+Postgrex.query!(pg, "create extension if not exists vector;", [])
+Postgrex.query!(pg, "drop table if exists documents;", [])
+Postgrex.query!(pg, "create table documents ....", [])
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+We use [Ecto.Repo](https://hexdocs.pm/ecto/Ecto.Repo.html) behaviour. We can use a more friendly DSL than raw SQL commands.
+
+```elixir
+defmodule RAG.Repo do
+  use Ecto.Repo,
+    otp_app: :rag,
+    adapter: Ecto.Adapters.Postgres
+end
+
+defmodule RAG.Document do
+  use Ecto.Schema
+
+  schema "documents" do
+    field :content, :string
+    field :embedding, Pgvector.Ecto.Vector
+  end
+end
+
+{:ok, pg} = 
+  RAG.Repo.start_link(
+    hostname: "localhost",
+    username: "postgres",
+    password: "secret",
+    database: "rag_example",
+    types: RAG.PostgrexTypes
+  )
+```
+
+We create the extension:
+
+```elixir
+RAG.Repo.query!("create extension if not exists vector;")
+```
+
+We check in the terminal that the index `HNSW` method is available:
+
+```
+rag_example=# select * from pg_am where amname='hnsw';
+
+16450 | hnsw   | hnswhandler | i
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+We create a table with two columns, "content" and "embedding" where the datatypes are respectively "text" and "vector(384)". The later is because we will be using an embedding model with 384 dimensions (see further).
+
+We create an `hnsw` index on the "embedding" column using the "cosine" distance.
+
+cf [documentation](https://github.com/pgvector/pgvector#hnsw): an HNSW index creates a multilayer graph. It has better query performance than IVFFlat (in terms of speed-recall tradeoff), but has slower build times and uses more memory. Also, an index can be created without any data in the table
+
+```elixir
+# reset the table
+RAG.Repo.query!("drop table if exists documents;")
+
+RAG.Repo.query!("""
+  CREATE TABLE IF NOT EXISTS documents (
+    id SERIAL PRIMARY KEY,
+    content TEXT,
+    embedding vector(384)
+  )
+""")
+
+RAG.Repo.query!(
+  "create index if not exists embedding_idx on documents using hnsw (embedding vector_l2_ops);"
+)
+```
+
+Check in the terminal (that runs `psql` in the container) the details of the created table "documents" and the indexes we created:
+
+<!-- livebook:{"break_markdown":true} -->
+
+```bash
+rag_example=# \d documents
+
+ id        | integer     |   | not null | nextval('documents_id_seq'::regclass)
+ content   | text        |   |          |
+ embedding | vector(384) |   |          |
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+```bash
+rag_example=# select * from pg_indexes where tablename='documents';
+
+ public | documents | documents_pkey           |  | CREATE UNIQUE INDEX documents_pkey ON public.documents USING btree (id)
+ public | documents | documents_embedding_idx  |  | CREATE INDEX documents_embedding_idx ON public.documents USING hnsw (embedding vector_cosine_ops)
+```
+
+## Fetching and chunking documents
+
+We implement the logic to fetch documents from the `Phoenix LiveView` GitHub repo and chunk them with `TextChunker`.
+
+```elixir
+defmodule RAG.DataCollector do
+  #def fetch_and_chunk_docs(urls) do
+  #  Enum.flat_map(urls, &process_directory/1)
+  #end
+
+  defp extract_chunks(file) do
+    case file do
+      %{"type" => "file", "name" => name, "download_url" => download_url} ->
+        if String.ends_with?(name, ".md") do
+          Req.get!(download_url).body
+          |> TextChunker.split(format: :markdown, chunk_size: 500, chunk_overlap: 200)
+          #|> TextChunker.split(format: :markdown)
+          |> Enum.map(&Map.get(&1, :text))
+        else
+          []
+        end
+      _ -> []
+    end
+  end
+
+  def process_directory(url) do
+    Req.get!(url).body
+    |> Enum.flat_map(&extract_chunks/1)
+  end
+end
+```
+
+```elixir
+#guides  = [
+  #"https://api.github.com/repos/phoenixframework/phoenix_live_view/contents/guides/server",
+  #"https://api.github.com/repos/phoenixframework/phoenix_live_view/contents/guides/client",
+  #"https://api.github.com/repos/phoenixframework/phoenix_live_view/contents/guides/introduction"
+#]
+
+#chunks = RAG.DataCollector.fetch_and_chunk_docs(guides)
+```
+
+```elixir
+# length(chunks) |> dbg()
+# Enum.each(chunks, fn chunk -> IO.puts(String.length(chunk)) end)
+```
+
+## Generate & insert embeddings from the sources
+
+We use `Bumblebee` to load a sentence transformer model, and then compute the embeddings and insert into the database
+
+```elixir
+defmodule RAG.Embedder do
+  def load_model do
+    repo = {:hf, "sentence-transformers/all-MiniLM-L6-v2"}
+    {:ok, model_info} = Bumblebee.load_model(repo) 
+    {:ok, tokenizer} = Bumblebee.load_tokenizer(repo)
+
+    embedding_serving = 
+      Bumblebee.Text.text_embedding(
+        model_info, 
+        tokenizer,
+        output_pool: :mean_pooling,
+        output_attribute: :hidden_state,
+        embedding_processor: :l2_norm,
+        compile: [batch_size: 1, sequence_length: [2000]],
+        defn_options: [compiler: EXLA]
+      )
+
+    Kino.start_child({Nx.Serving, serving: embedding_serving, name: ChunkEmbedder})
+  end
+
+  def generate_embedding(text) do
+    %{embedding: vector} = Nx.Serving.batched_run(ChunkEmbedder, String.trim(text))
+    #embedding_serving = load_model()
+    #%{embedding: vector} = Nx.Serving.run(embedding_serving, String.trim(text))
+    Nx.to_flat_list(vector)
+  end
+
+
+  def embed_query(query) do
+    {model_info, tokenizer} = load_model()
+    inputs = Bumblebee.apply_tokenizer(tokenizer, [query])
+    _embedding = 
+      Axon.predict(model_info.model, model_info.params, inputs, compiler: EXLA)
+      |> Map.get(:hidden_state)
+      |> Nx.to_flat_list()
+  end
+end
+```
+
+### Test the embedding against Python
+
+Lets firstly test that our embedding works correctly.
+
+We use the `Python` results running this model as our source of truth.
+
+We use the `Python` library [llm](https://github.com/simonw/llm?ref=samrat.me) to compute an embedding of a given chunk.
+
+We install a plugin to bring in an embedding model "sentence-transformers":
+
+<!-- livebook:{"break_markdown":true} -->
+
+```console
+> llm install llm-sentence-transformers
+```
+
+We check the installation:
+
+```console
+> llm plugins
+
+[
+  {
+    "name": "llm-sentence-transformers",
+    "hooks": [
+      "register_commands",
+      "register_embedding_models"
+    ],
+    "version": "0.2"
+  }
+]
+```
+
+We load the model and use the `llm` CLI to test the output of the chunk "phoenix liveview":
+
+```console
+> llm embed -c 'phoenix liveview' -m sentence-transformers/all-MiniLM-L6-v2
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+We obtain a vector of length 384 (as expected when we craeted the row "embedding" in our "documents" table)
+
+<!-- livebook:{"break_markdown":true} -->
+
+```console
+[-0.009706685319542885, -0.052094198763370514, -0.09055887907743454, -0.020933324471116066, -0.009688383899629116, 0.013350575231015682, 0.025953974574804306, -0.16938750445842743, -0.010423310101032257, -0.011145276017487049, 0.027349309995770454, -0.001918078283779323, -0.021567553281784058, -0.003199926810339093, -0.0008285145158879459, -0.015139210037887096, 0.06255557388067245, -0.06932919472455978, 0.013888751156628132, -0.004555793013423681, -0.07562420517206192, -0.009811706840991974, -0.012136539444327354, 0.04693487659096718, 0.028381554409861565, 0.02516898326575756, 0.004244842566549778, 0.09572193771600723, 0.003558499040082097, -0.03330621495842934, 0.059096790850162506, 0.015773825347423553, -0.021120624616742134, -0.017401551827788353, 0.002323578344658017, -0.01928715407848358, -0.037473130971193314, -0.05654807388782501, -0.07047389447689056, 0.03284792602062225, 0.03998279199004173, -0.0018617657478898764, 0.013794654048979282, -0.006744460668414831, -0.04268449544906616, -0.005278026219457388, -0.04928094521164894, -0.014056716114282608, 0.09232012927532196, 0.03543466702103615, -0.07766849547624588, -0.05254453793168068, 0.020454902201890945, -0.014929951168596745, -0.01360740140080452, 0.0762268602848053, -0.04458821937441826, 0.10652239620685577, 0.02130645141005516, 0.020168358460068703, 0.055139005184173584, 0.013958930037915707, 0.03409590944647789, 0.06980026513338089, -0.055009763687849045, 0.04828595742583275, -0.04335803538560867, -0.05551977828145027, 0.057622700929641724, -0.14472559094429016, -0.07690852880477905, 0.0752054825425148, -0.06626240164041519, -0.10166660696268082, -0.036210622638463974, 0.005083833821117878, 0.09415172785520554, -0.10039765387773514, -0.044486816972494125, -0.010955004021525383, 0.05416633188724518, -0.05296527221798897, -0.08484798669815063, 0.014321418479084969, -0.012852650135755539, -0.04332977533340454, 0.027963127940893173, -0.004860874265432358, 0.016482612118124962, 0.00031064797076396644, -0.038759347051382065, 0.09060487896203995, -0.003954814746975899, 0.0066909948363900185, -0.04902026429772377, -0.0321497842669487, 0.03323419764637947, -0.07336383312940598, -0.07007859647274017, 0.11866921186447144, -0.006319165695458651, 0.013769092038273811, -0.010420006699860096, 0.037019360810518265, -0.006769551429897547, -0.0774683952331543, -0.02037704363465309, 0.05348605662584305, -0.009166506119072437, 0.07306555658578873, 0.04843968152999878, -0.0191731546074152, -0.012680641375482082, -0.04643210023641586, 0.06656478345394135, 0.049946416169404984, 0.005383193027228117, 0.09355848282575607, 0.07221179455518723, 0.00035637832479551435, 0.07716463506221771, -0.014789973385632038, 0.0032950607128441334, 0.02041396126151085, 0.12589098513126373, -0.013734260573983192, -0.06510419398546219, -8.377649974329554e-34, 0.0465264655649662, 0.018600188195705414, 0.023673737421631813, -0.03975001350045204, 0.006522921845316887, -0.05740560591220856, 0.04723696410655975, -0.022352861240506172, -0.06786847859621048, -0.049680083990097046, 0.041338685899972916, 0.040598154067993164, 0.004347966518253088, 0.0019419637974351645, 0.0593830943107605, -0.022641830146312714, -0.059332847595214844, 0.024844979867339134, -0.030346903949975967, 0.04088018462061882, -0.11711975932121277, -0.05935895815491676, -0.07624877244234085, -0.0034681488759815693, -0.09124185144901276, 0.10694640129804611, 0.038549020886421204, -0.023237070068717003, 0.059459052979946136, 0.012864507734775543, -8.220075687859207e-05, -0.023421308025717735, -0.0038216260727494955, -0.022600388154387474, -0.042519427835941315, 0.03251700848340988, -0.11362667381763458, -0.070726178586483, -0.05732864886522293, -0.03448524326086044, 0.0025267857126891613, -0.05934043973684311, 0.035189833492040634, -0.04709644615650177, -0.019455846399068832, 0.012468772940337658, 0.01750139147043228, 0.010737469419836998, 0.021487422287464142, 0.01378792803734541, -0.00473681790754199, -0.02324003539979458, -0.042259685695171356, 0.013701599091291428, -0.1603987216949463, -0.03394573554396629, -0.06163131073117256, 0.027642197906970978, 0.0480823814868927, 0.007341132033616304, -0.04932725057005882, -0.006094575859606266, -0.03020387515425682, 0.025128886103630066, -0.0424746572971344, -0.029917337000370026, 0.08041656017303467, -0.060339976102113724, 0.020760027691721916, -0.005688796751201153, -0.019300002604722977, -0.00025564845418557525, 0.14761532843112946, -0.011806933209300041, -0.08031304180622101, 0.012658613733947277, -0.04357609897851944, 0.054017528891563416, -0.029514268040657043, 0.09797929972410202, -0.06787499040365219, -0.009654860012233257, 0.08822876214981079, 0.0071128616109490395, 0.08040465414524078, -0.09981250017881393, -0.0712403878569603, 0.014606050215661526, 0.006771376822143793, 0.009007059969007969, -0.09532462060451508, -0.001153712160885334, 0.06696195900440216, 0.01431110966950655, 0.015497423708438873, 1.391291006815518e-34, -0.0877714604139328, -0.044869035482406616, -0.050386037677526474, 0.014557860791683197, 0.033505629748106, -0.01246718131005764, -0.024929942563176155, 0.07470132410526276, 0.018407559022307396, -0.015063050203025341, 0.00890978705137968, 0.007822553627192974, -0.04209212586283684, -0.042379263788461685, 0.06720530241727829, -0.05009369179606438, 0.057304296642541885, -0.05955012887716293, -0.007801231928169727, 0.036120206117630005, -0.019580120220780373, 0.04668674245476723, -0.10914444923400879, -0.0152498884126544, 0.08360365778207779, 0.032436199486255646, 0.1031121239066124, 0.035162314772605896, 0.0009793617064133286, 0.013043600134551525, 0.03905674070119858, -0.05273982882499695, -0.03979749232530594, 0.07431221753358841, 0.0053491354919970036, 0.04409870505332947, 0.01559508964419365, -0.02258165366947651, -0.038272421807050705, -0.00592286279425025, 0.03409285470843315, -0.017850439995527267, -0.025339549407362938, 0.05688871443271637, 0.03367991745471954, 0.053125280886888504, 0.02797221764922142, 0.04651166871190071, -0.025798745453357697, 0.07654213160276413, -0.05452868342399597, 0.07571548968553543, -0.04845935478806496, 0.04557304084300995, 0.0005185940535739064, 0.01955413445830345, -0.011204961687326431, 0.08311574161052704, 0.029483655467629433, -0.03536361828446388, 0.029990360140800476, -0.012518269009888172, -0.05140243098139763, 0.008866432122886181, -0.023238658905029297, 0.0875440165400505, 0.031906381249427795, -0.009095188230276108, -0.01597045734524727, 0.03233151510357857, -0.01468003261834383, 0.016802212223410606, -0.03209897503256798, -0.022233223542571068, 0.02382213994860649, 0.04805407300591469, -0.010290113277733326, 0.1078297421336174, 0.00828509870916605, 0.011562783271074295, 0.04489510506391525, -0.05462853983044624, 0.02285155840218067, 0.10781750828027725, 0.17013715207576752, 0.04862827807664871, -0.05012364685535431, 0.04037683457136154, -0.004674509167671204, -0.0275392085313797, -0.008884521201252937, 0.04906219244003296, -0.022000722587108612, -0.06217927858233452, -0.07843329012393951, -1.2313860153767564e-08, 0.030677741393446922, 0.02657950296998024, 0.004514249507337809, -0.01775089092552662, 0.01425884384661913, 0.010068267583847046, 0.08130506426095963, -0.01107108686119318, -0.033817946910858154, 0.04290502518415451, -0.0037454983685165644, -0.1153118684887886, 0.01954086497426033, 0.05694691464304924, -0.011090126819908619, -0.006265248171985149, 0.010518167167901993, 0.009878992103040218, -0.06495311856269836, -0.0312698557972908, -0.04172905161976814, -0.020009499043226242, 0.024924013763666153, -0.05150030553340912, -0.018249161541461945, 0.013517157174646854, 0.022572970017790794, 0.03409069776535034, 0.01373896561563015, -0.0187864750623703, -0.02418380044400692, 0.0674821212887764, -0.030120830982923508, -0.02169713005423546, 0.031700387597084045, -0.028895670548081398, 0.059139981865882874, 0.05458205193281174, 0.028539219871163368, 0.07839121669530869, -0.006672366987913847, -0.06958680599927902, 0.0746375322341919, -0.032018501311540604, -0.01347350049763918, 0.024394653737545013, 0.012727539986371994, -0.15886251628398895, 0.047307442873716354, 0.027095871046185493, -0.04877275973558426, 0.013895872049033642, 0.018900439143180847, 0.009253362193703651, 0.05958527699112892, 0.04274486377835274, 0.10916648060083389, -0.0478215292096138, -0.032531145960092545, 0.11852315068244934, 0.08784059435129166, 0.06753354519605637, -0.03710101172327995, 0.05826509743928909]
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+We now test our `Bumblebee` settings.
+
+We load the model:
+
+```elixir
+RAG.Embedder.load_model()
+```
+
+and we check that we obtain the same (first!) values as above when we run our `Bumblebee` based embedder against the same chunk:
+
+```elixir
+# RAG.Embedder.generate_embedding("phoenix liveview")
+```
+
+### Build the RAG source
+
+We setup the foundations of our RAG by chunking and inserting our documents as strngs and embeddings, their numerical representation, into our vector database.
+
+```elixir
+guides  = [
+  "https://api.github.com/repos/phoenixframework/phoenix_live_view/contents/guides/server",
+  "https://api.github.com/repos/phoenixframework/phoenix_live_view/contents/guides/client",
+  "https://api.github.com/repos/phoenixframework/phoenix_live_view/contents/guides/introduction"
+]
+```
+
+We read each Github folder and download the markdown file, chunk it into a list of strings, and then compute an embedding for each chunk and save it into the vector database.
+
+```elixir
+guides
+|> Task.async_stream(fn guide -> 
+  chunks = RAG.DataCollector.process_directory(guide) 
+  IO.puts("chunks length: #{length(chunks)}")
+  Enum.each(chunks, fn chunk -> 
+     Task.start(fn -> 
+        #IO.puts(String.length(chunk))
+        embedding = RAG.Embedder.generate_embedding(chunk)
+        RAG.Repo.insert!(%RAG.Document{content: chunk, embedding: embedding})  
+     end)
+  end)
+end, 
+ordered: false,
+timeout: :infinity
+)
+|> Stream.run()
+```
+
+We check the number of insertions. We should have 422.
+
+```elixir
+RAG.Repo.aggregate(RAG.Document, :count, :id) == 422
+```
+
+## Semantic search
+
+We implement the l2 similarity search on the embeddings
+
+```elixir
+top_k = 20
+```
+
+```elixir
+defmodule RAG.SemanticSearch do
+  import Ecto.Query
+
+  def search(query, top_k) do
+    query_embedding = RAG.Embedder.generate_embedding(query) 
+    
+    from(d in RAG.Document,
+      order_by: fragment("embedding <-> ?", ^query_embedding),
+      limit: ^top_k
+    )
+    |> RAG.Repo.all()
+  end
+end
+```
+
+```elixir
+# Usage
+query = "how to handle forms server-side?"
+
+# a list of %RAG.Document{content: content, embedding: embedding}
+top_results = RAG.SemanticSearch.search(query, top_k)
+```
+
+We expect the response to contain at least "handle form":
+
+```elixir
+List.first(top_results).content
+```
+
+## Re-ranking with cross-encoder
+
+For this step, we'll load another model from Huggingface compatible with Bumblebee to rerank the results.
+
+We use a pretrained model "cross-encoder/ms-marco-MiniLM-L-6-v2" as shown in the SBert [documentation on cross-encoders](https://www.sbert.net/docs/cross_encoder/pretrained_models.html).
+
+```elixir
+defmodule RAG.CrossEncoder do
+  def load_model do
+    repo= {:hf, "cross-encoder/ms-marco-MiniLM-L-6-v2"}
+    #tokenizer = {:hf, "sentence-transformers/all-MiniLM-L6-v2"}
+    tokenizer = {:hf, "bert-base-uncased"}
+    {:ok, model_info} = Bumblebee.load_model(repo)
+    {:ok, tokenizer} = Bumblebee.load_tokenizer(tokenizer)
+
+    {model_info, tokenizer}
+  end
+
+  def rerank(query, documents) do
+    # Prepare input pairs for cross-encoder
+    {model_info, tokenizer} = load_model()
+    input_pairs = 
+     Bumblebee.apply_tokenizer(tokenizer, 
+       Enum.map(documents, fn doc -> 
+         {query, doc.content}
+       end)
+     )
+
+    # Run cross-encoder in batches
+    outputs = Axon.predict(model_info.model, model_info.params, input_pairs)
+     
+
+    # Combine scores with original documents and sort
+    Enum.zip(documents, outputs.logits |> Nx.to_flat_list())
+    |> Enum.sort_by(fn {_, score} -> score end, :desc)
+    |> Enum.map(fn {doc, _} -> doc.content end)
+  end
+end
+```
+
+model with architecture :for_sequence_classification
+
+```elixir
+
+```
+
+```elixir
+# Load the model
+RAG.CrossEncoder.load_model()
+
+# Rerank the results
+query = "how to handle forms server-side?"
+context = RAG.CrossEncoder.rerank(query, top_results)
+```
+
+## Build the prompt
+
+We define the prompt with a context and a question
+
+```elixir
+defmodule RAG.PromptBuilder do
+  def build_prompt(query, context) do
+    context_text = Enum.join(context, "\n\n")
+    """
+    You are a proficient Elixir developer, with full knowledge of the framework Phoenix LiveView.
+    You are given a context information below relevant to the query that is submitted to you.
+    -----------------------
+    #{context_text}
+    -----------------------
+    You answer to the query using in priority the context informations given above and you should cite it.
+    If the response contains Elixir code or Javascript snippet, format the response.
+    The response should be in markdown format.
+
+    Query: #{query}
+    Answer:
+    """
+  end
+end
+```
+
+## LLM integration
+
+Most of the LLM are paid solutions accesible via an endpoint.
+
+Very few models can be run locally. LLMs tends to be large.
+
+We will experiment two methods:
+
+* uploading locally a Mistral LLM from Huggingface (via Bumblebee)
+* running the "codellama" model via the `ollama` plateform
+
+<!-- livebook:{"break_markdown":true} -->
+
+### LLama CLI
+
+We install `ollama` (see [the repo](https://github.com/ollama/ollama/tree/main)) to install de "codellama" LLM.
+
+We pull a model from the registry:
+
+```console
+> ollama pull codellama
+```
+
+We start an LLM server:
+
+```console
+> ollama serve
+```
+
+This gives us an interactive CLI and a [REST API](https://github.com/ollama/ollama/tree/main#rest-api).
+
+We can test this and send a **POST** request to generate a completion where we pass a json `{"model": "codellama", "prompt": "...."}`.
+
+```console
+> curl http://localhost:11434/api/generate -d \
+   '{"model": "codellama", "prompt": "how to handle forms with Phoenix Liveview?", "stream": false}'
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+We get a response back:
+
+<!-- livebook:{"break_markdown":true} -->
+
+````json
+{
+  "model":"codellama",
+  "created_at":"2024-08-29T07:25:31.941263Z",
+  "response":"\nTo handle forms in Phoenix LiveView, you can use the `Phoenix.LiveView.Form` module. This module provides a set of functions for creating and manipulating HTML form elements, as well as handling form data on the server.\n\nHere's an example of how to create a simple form using Phoenix LiveView:\n```\nimport Ecto.Changeset\n\n# Create a changeset for the form\nchangeset = Ecto.Changeset.change(%YourModel{}, %{})\n\n# Render the form in your template\n\u003cform phx-submit=\"save\"\u003e\n  \u003cdiv\u003e\n    \u003clabel for=\"name\"\u003eName:\u003c/label\u003e\n    \u003cinput type=\"text\" id=\"name\" name=\"name\" value={changeset.data[\"name\"]} /\u003e\n  \u003c/div\u003e\n\n  \u003cdiv\u003e\n    \u003clabel for=\"age\"\u003eAge:\u003c/label\u003e\n    \u003cinput type=\"number\" id=\"age\" name=\"age\" value={changeset.data[\"age\"]} /\u003e\n  \u003c/div\u003e\n\n  \u003cbutton type=\"submit\"\u003eSave\u003c/button\u003e\n\u003c/form\u003e\n```\nIn this example, we're creating a changeset for the form, which is used to validate and update the form data on the server. We then render the form in our template using the `phx-submit` attribute, which tells Phoenix to send the form data to the server when the form is submitted.\n\nWhen the form is submitted, Phoenix will automatically handle the form data and update the changeset with any validation errors or updates. You can then use the updated changeset to persist the data in your database.\n\nTo handle the form submission on the server, you can define a `save` function in your LiveView module that will be called when the form is submitted. This function will receive the updated changeset as an argument, and you can use it to update the data in your database or perform any other necessary actions.\n```\ndef save(changeset) do\n  # Validate the changeset and return an error if there are any validation errors\n  case Ecto.Changeset.apply_action(changeset, :update) do\n    {:ok, _model} -\u003e\n      # Update the data in your database or perform any other necessary actions\n      :ok\n\n    {:error, _changeset} -\u003e\n      # Render an error page if there were validation errors\n      render(:index, changeset: changeset)\n  end\nend\n```\nIn this example, we're using the `Ecto.Changeset` module to validate the form data and update the changeset with any validation errors or updates. If there are no validation errors, we can use the updated changeset to persist the data in our database or perform any other necessary actions. If there are validation errors, we render an error page with the updated changeset.\n\nOverall, using Phoenix LiveView forms provides a convenient and efficient way to handle form data on the server, while also providing a seamless user experience for your users.",
+  "done":true,
+  ...
+}
+
+````
+
+<!-- livebook:{"break_markdown":true} -->
+
+We check that `ollama` is running:
+
+```console
+lsof -i -P | grep LISTEN | grep 11434
+```
+
+The Livebook can run a **POST** request with `Req` and pass a json to the `:json` key.
+
+As per the [documentation](https://hexdocs.pm/req/Req.Steps.html#encode_body/1-request-options), it does `Jason.encode_to_iodata(%{model: "codellama", "prompt": "..."})` and sets the adequate headers.
+
+Note that we need to increase the socket timeout above the default 5000.
+
+<!-- livebook:{"break_markdown":true} -->
+
+### LLama REST API via Elixir
+
+```elixir
+prompt = RAG.PromptBuilder.build_prompt(query, context)
+json = %{stream: false, model: "codellama", prompt: prompt}
+
+res = 
+  Req.post!(
+    "http://localhost:11434/api/generate",
+    json: json,
+    receive_timeout: 120_000
+  )
+
+response = 
+  case res do
+    %{status: 200, body: body} -> 
+      body["response"]
+    _ ->
+      IO.puts "error"
+  end
+
+```
+
+### RAGed response from CodeLLama
+
+To handle forms with LiveView, you can use the `Phoenix.Component` module and its functions to define a form component that will submit and validate the form data using LiveView's built-in validation mechanism. Here's an example of how to define a form component in your LiveView:
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+defmodule MyAppWeb.Components.Form do
+  use Phoenix.Component
+  def form(assigns) do
+    ~H"""
+      <.form for={@form} phx-change="validate" phx-submit="save">\
+        ...
+      </.form>
+    """
+    end
+  end
+...
+```
+
+In the above example, we define a `Form` component that renders a form tag with a `phx-change` and `phx-submit` event to handle validation and submission of the form data. The `for` attribute is used to bind the form to a changeset or user parameters, which can be created from a form struct using `Phoenix.Component.to_form/1`.
+
+You may also take advantage of LiveView's CSS loading state classes to swap out your form content while the form is submitting. For example, with the following rules in your `app.css`:
+
+```css
+.while-submitting { display: none; }
+.inputs { display: block; }
+
+.phx-submit-loading .while-submitting { display: block; }
+  
+.phx-submit-loading .inputs { display: none; }
+```
+
+You can show and hide content with the following markup:
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+<.form for={@form} phx-change="validate" phx-submit="save">
+  <div class="while-submitting">Please wait while we save our content...</div>
+  <div class="inputs">
+    <input type="text" name="text" value={@text}>
+  </div>
+</.form>
+```
+
+Additionally, we strongly recommend including a unique HTML \"id\" attribute on the form. When DOM siblings change, elements without an ID will be replaced rather than moved, which can cause issues such as form fields losing focus.
+
+You may wish for an individual input to use its own change event or to target a different component. This can be accomplished by annotating the input itself with `phx-change`, for example:
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+<.form for={@form} phx-change="validate" phx-submit="save">
+  ...
+  <.input field={@form[:email]}  phx-change="email_changed" phx-target={@myself} />
+</.form>
+```
+
+The `phx-change` event will trigger the `email_changed` function on the `@myself` component, which can be used to update the form data or perform other actions based on changes to the input field.
+
+You may also wish for an individual input to use its own change event or to target a different component. This can be accomplished by annotating the input itself with `phx-change`, for example:
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+<.form for={@form} phx-change="validate" phx-submit="save">
+  ...
+  <.input field={@form[:email]}  phx-change="email_changed" phx-target={@myself} />
+</.form>
+```
+
+The `phx-change` event will trigger the `email_changed` function on the `@myself` component, which can be used to update the form data or perform other actions based on changes to the input field.\n\nIt's also important to note that you may want to use a unique HTML \"id\" attribute on the form. When DOM siblings change, elements without an ID will be replaced rather than moved, which can cause issues such as form fields losing focus.\n\nYou may also wish for an individual input to use its own change event or to target a different component. This can be accomplished by annotating the input itself with `phx-change`, for example:
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+<.form for={@form} phx-change="validate" phx-submit="save">
+  ...
+  <.input field={@form[:email]}  phx-change="email_changed" phx-target={@myself} />
+</.form>
+```
+
+The `phx-change` event will trigger the `email_changed` function on the `@myself` component, which can be used to update the form data or perform other actions based on changes to the input field.
+
+<!-- livebook:{"break_markdown":true} -->
+
+### CodeLLama Response without RAG
+
+To handle forms server-side with Phoenix LiveView, you can use the `handle_event` function in your LiveComponent. This function is called whenever an event occurs on the client-side and allows you to handle the event on the server-side.\n\nHere's an example of how to handle a form submission with Phoenix LiveView:
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+defmodule MyAppWeb.MyLiveComponent do
+  use Phoenix.LiveComponent
+  def render(assigns) do
+    ~L"""
+    <form phx-change="validate">
+      <input type="text" name="email" />
+      <%= if @error do %>
+      <p class="error">
+      <%= @error %></p>
+      <% end %>
+    </form>
+    """
+  end
+  
+  def mount(socket) do
+    {:ok, assign(socket, :error, nil)}
+  end
+  
+  def handle_event("validate", params, socket) do
+    email = get_in(params, ["email"])
+    if is_nil(email) or String.valid?(email) do
+      {:noreply, assign(socket, :error, "Invalid email address")}
+    else
+        {:noreply, assign(socket, :error, nil)}
+    end
+  end
+end
+```
+
+In this example, the `handle_event` function is called whenever the form is submitted. It checks if the email field has a value and if it is valid (i.e., not empty or invalid). 
+If the email is invalid, an error message is displayed. Otherwise, the error message is cleared.\n\nYou can also use the `handle_event` function to handle other events on the client-side, such as changes in the form fields or checkboxes.
+
+It's important to note that you should always validate user input server-side to prevent malicious attacks like cross-site scripting (XSS)."
+
+## Evaluation metrics
+
+Implementing metrics to measure the quality of generated responses is an important step in evaluating and improving your RAG system. Here are several approaches you can take to implement such metrics:
+
+#### ROUGE Score (Recall-Oriented Understudy for Gisting Evaluation):
+
+ROUGE measures the overlap of n-grams, word sequences, and word pairs between the generated response and reference answers.
+
+```elixir
+defmodule RAG.Metrics do
+  def rouge_n(generated, reference, n) do
+    gen_ngrams = ngrams(generated, n)
+    ref_ngrams = ngrams(reference, n)
+    
+    matches = MapSet.intersection(gen_ngrams, ref_ngrams) |> MapSet.size()
+    total_ref = MapSet.size(ref_ngrams)
+    
+    matches / total_ref
+  end
+  
+  defp ngrams(text, n) do
+    text
+    |> String.split()
+    |> Enum.chunk_every(n, 1, :discard)
+    |> Enum.map(&Enum.join(&1, " "))
+    |> MapSet.new()
+  end
+end
+
+# Usage
+generated = RAG.process_query("How do I handle form submissions in Phoenix LiveView?")
+reference = "In Phoenix LiveView, form submissions are handled using the handle_event/3 callback..."
+rouge_1 = RAG.Metrics.rouge_n(generated, reference, 1)
+rouge_2 = RAG.Metrics.rouge_n(generated, reference, 2)
+```
+
+#### BLEU Score (Bilingual Evaluation Understudy):
+
+BLEU measures the precision of n-grams in the generated text compared to reference texts.
+
+```elixir
+defmodule RAG.Metrics do
+  def bleu(generated, reference, max_n \\ 4) do
+    gen_tokens = String.split(generated)
+    ref_tokens = String.split(reference)
+    
+    precisions = Enum.map(1..max_n, fn n ->
+      gen_ngrams = ngrams(gen_tokens, n)
+      ref_ngrams = ngrams(ref_tokens, n)
+      
+      matches = MapSet.intersection(gen_ngrams, ref_ngrams) |> MapSet.size()
+      total_gen = MapSet.size(gen_ngrams)
+      
+      if total_gen == 0, do: 0, else: matches / total_gen
+    end)
+    
+    geo_mean = :math.exp(Enum.sum(Enum.map(precisions, &:math.log/1)) / max_n)
+    brevity_penalty = :math.exp(1 - max(length(ref_tokens) / length(gen_tokens), 1))
+    
+    geo_mean * brevity_penalty
+  end
+  
+  defp ngrams(tokens, n) do
+    tokens
+    |> Enum.chunk_every(n, 1, :discard)
+    |> Enum.map(&Enum.join(&1, " "))
+    |> MapSet.new()
+  end
+end
+
+# Usage
+bleu_score = RAG.Metrics.bleu(generated, reference)
+```
+
+#### Semantic Similarity:
+
+Use embedding models to compare the semantic similarity between generated and reference responses.
+
+```elixir
+defmodule RAG.Metrics do
+  def semantic_similarity(generated, reference, embedding_serving) do
+    gen_embedding = RAG.Embedder.generate_embedding(generated, embedding_serving)
+    ref_embedding = RAG.Embedder.generate_embedding(reference, embedding_serving)
+    
+    cosine_similarity(gen_embedding, ref_embedding)
+  end
+  
+  defp cosine_similarity(v1, v2) do
+    dot_product = Enum.zip(v1, v2) |> Enum.sum(fn {a, b} -> a * b end)
+    magnitude1 = :math.sqrt(Enum.sum(Enum.map(v1, &(&1 * &1))))
+    magnitude2 = :math.sqrt(Enum.sum(Enum.map(v2, &(&1 * &1))))
+    
+    dot_product / (magnitude1 * magnitude2)
+  end
+end
+
+# Usage
+semantic_sim = RAG.Metrics.semantic_similarity(generated, reference, RAG.embedding_serving)
+```
+
+#### Human Evaluation:
+
+While automated metrics are useful, human evaluation is often necessary for a comprehensive assessment. You can implement a simple scoring system in your Livebook:
+
+```elixir
+defmodule RAG.Metrics do
+  def human_evaluation(generated, reference) do
+    IO.puts("Generated response:\n#{generated}\n")
+    IO.puts("Reference response:\n#{reference}\n")
+    
+    score = Kino.Input.number("Rate the response (1-5):")
+    feedback = Kino.Input.text("Provide feedback:")
+    
+    %{score: Kino.Input.read(score), feedback: Kino.Input.read(feedback)}
+  end
+end
+
+# Usage
+human_eval = RAG.Metrics.human_evaluation(generated, reference)
+```
+
+#### Relevance and Correctness with another LLM:
+
+You can use another LLM to evaluate the relevance and correctness of the generated response:
+
+```elixir
+defmodule RAG.Metrics do
+  def evaluate_relevance_and_correctness(query, generated, reference) do
+    prompt = """
+    Query: #{query}
+    Generated Answer: #{generated}
+    Reference Answer: #{reference}
+
+    Please evaluate the generated answer based on the following criteria:
+    1. Relevance (0-10): How well does the answer address the query?
+    2. Correctness (0-10): How accurate is the information provided?
+    3. Completeness (0-10): How thorough is the answer?
+
+    Provide your evaluation in the following format:
+    Relevance: [score]
+    Correctness: [score]
+    Completeness: [score]
+    Explanation: [brief explanation of scores]
+    """
+
+    RAG.LLM.generate_response(prompt)
+  end
+end
+
+# Usage
+evaluation = RAG.Metrics.evaluate_relevance_and_correctness(query, generated, reference)
+IO.puts(evaluation)
+```
+
+```elixir
+defmodule RAG.Metrics do
+  def semantic_similarity(generated, reference, embedding_serving) do
+    gen_embedding = RAG.Embedder.generate_embedding(generated, embedding_serving)
+    ref_embedding = RAG.Embedder.generate_embedding(reference, embedding_serving)
+    
+    cosine_similarity(gen_embedding, ref_embedding)
+  end
+  
+  defp cosine_similarity(v1, v2) do
+    dot_product = Enum.zip(v1, v2) |> Enum.sum(fn {a, b} -> a * b end)
+    magnitude1 = :math.sqrt(Enum.sum(Enum.map(v1, &(&1 * &1))))
+    magnitude2 = :math.sqrt(Enum.sum(Enum.map(v2, &(&1 * &1))))
+    
+    dot_product / (magnitude1 * magnitude2)
+  end
+end
+
+# Usage
+semantic_sim = RAG.Metrics.semantic_similarity(generated, reference, RAG.embedding_serving)
+```
+
+## Dimension reduction & visualization
+
+```elixir
+
+```
