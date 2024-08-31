@@ -6,6 +6,8 @@ We want to improve the search for the Elixir/Phoenix/Plug/LiveView documentation
 
 All the tools used here are "free", meaning everything is running locally.
 
+[![Run in Livebook](https://livebook.dev/badge/v1/blue.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fdwyl%2Frag-elixir-doc%2Fblob%2Fmain%2Frag-elixir.livemd)
+
 ## What is `RAG`?
 
 It is "chat with your documents", meaning you ask an LLM model to respond based on additional ressources.
