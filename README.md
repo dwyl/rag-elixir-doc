@@ -588,12 +588,15 @@ A comparison of different LLMs (source: Anthropic)
 
 ## Going further?
 
-We can enhance our documentation base by accepting documents "on the fly" (download a given link), and maybe running the database ingesting in a background job.
+- accept new documents "on the fly" (download a given link), and maybe running the database ingesting in a background job.
 
-Add `Opensearch`?
+- add `Opensearch`?
+	- install local:
+ 		- <https://opensearch.org/docs/latest/install-and-configure/install-opensearch/docker/>
+ 		- <https://waytohksharma.medium.com/opensearch-local-running-instance-with-docker-with-m1-1e60d90a263c>
+   	- ingest data: <https://opensearch.org/docs/latest/getting-started/ingest-data/> and <https://opensearch.org/docs/latest/api-reference/document-apis/index-document/>
 
-Can we measure our performance?
-
+- clusterise data?
 
 ## Source of inspiration. 
 
