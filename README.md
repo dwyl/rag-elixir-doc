@@ -51,8 +51,7 @@ We believe the next two paragraphs gives some confidence that this technic works
 Question: "how to handle forms server-side?"
 ```
 
-#### The "raw" response
-
+<details><summary>The "raw" response</summary>
 
 Handling forms on the server-side involves using the `Phoenix.HTML` module's `form_for` function to create a form struct with the necessary information for submitting the form data to the server.
 Here's an example:
@@ -114,9 +113,10 @@ end
 
 In this example, we use the `validate` function to add validation rules to the form. The `:required` and `:number` arguments specify that the fields should be required and contain only numbers, respectively.
 If there are any errors in the submitted data, the `error?` function will return true and we can handle them using the `error` function.
+</details>
+<br/>
 
-
-#### The "RAGed" response
+<details><summary>The "RAGed" response</summary>
 
 To handle forms with LiveView, you can use the `Phoenix.Component` module and its functions to define a form component that will submit and validate the form data using LiveView's built-in validation mechanism. Here's an example of how to define a form component in your LiveView:
 
@@ -190,13 +190,12 @@ The `phx-change` event will trigger the `email_changed` function on the `@myself
 ```
 
 The `phx-change` event will trigger the `email_changed` function on the `@myself` component, which can be used to update the form data or perform other actions based on changes to the input field.
+</details>
+<br/>
 
+The first conclusion is that thee RAG pipeline improve a lot the response, most probably because the current version of the LLM (July 2024) is not up-to-date with the current state-of-art.
 
-#### First conclusion
-
-The RAG pipeline improve a lot the response, most probably because the current version of the LLM (July 2024) is not up-to-date with the current state-of-art.
-
-### A word on halucination
+We continue but know we are seeking for some help:
 
 <details><summary>We ask LLMs which embedding models to use. Some examples of how LLMs respond to this question</summary>
 
@@ -449,8 +448,9 @@ The sources will be extracted from the files that the GitHub API returns when qu
   - we can also add some ".ex" modules when they provide documentation in a moduledoc.
 
 
-## Overview of the process:
-  
+## Overview of the RAG process:
+  * installed tools: the database `Postgres` with the `pgvector` extension, the plateform `ollama` to run LLM locally.
+    
   * Build the external sources.
     - Download "external sources" as a string
     - chunk the sources
@@ -466,7 +466,9 @@ The sources will be extracted from the files that the GitHub API returns when qu
 
 ### Pseudo-code pipeline
 
-The pipeline will use two models
+The pipeline will use three SBert based models: "sentence-transformers/all-MiniLM-L6-v2" for the embedding, "cross-encoder/ms-marco-MiniLM-L-6-v2" for the reranking, and "bert-base-uncased" for tokenizing.
+
+In pseudo-code, we have:
   
 ```elixir
 # Data collection and chunking
@@ -569,11 +571,7 @@ This is where we define the scope of the response we want from the LLM, given th
 
 The LLM should be able to generate an "accurate" response constrainted by this context.
 
-## Which **LLM**? 
-
-Our main problem will be halucination, in other words, the LLM invents the response.
-
-The LLM could be OpenAI ChatGPT? Meta Llama? Mistral? Anthropic Claude 3.5 Sonnet? , Google T5?
+## A word on **LLMs**
 
 A Dockyard post on this: <https://dockyard.com/blog/2023/05/16/open-source-elixir-alternatives-to-chatgpt>.
 
@@ -588,11 +586,9 @@ A comparison of different LLMs (source: Anthropic)
 
 ## Going further?
 
-This POC is expected to be run **only locally** (no deploy, mainly because of the costs).
+We can enhance our documentation base by accepting documents "on the fly" (download a given link), and maybe running the database ingesting in a background job.
 
-We can enhance our documentation base by accepting documents "on the fly" (download a given link).
-
-Add Full-Text-Search?
+Add `Opensearch`?
 
 Can we measure our performance?
 
