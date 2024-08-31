@@ -538,6 +538,7 @@ We pull a model from the registry:
 ```console
 > ollama pull codellama
 ```
+
 We start an LLM server:
 
 ```console
@@ -556,7 +557,7 @@ We can test this and send a **POST** request to generate a completion where we p
 
 We get a response back:
 
-````json
+```json
 {
   "model":"codellama",
   "created_at":"2024-08-29T07:25:31.941263Z",
@@ -566,7 +567,6 @@ We get a response back:
 }
 
 ```
-</details>
 </details>
 
 <!-- livebook:{"break_markdown":true} -->
