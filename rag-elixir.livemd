@@ -12,6 +12,9 @@ Mix.install(
     {:ecto_sql, "~> 3.12"},
     {:exla, "~> 0.7.3"},
     {:kino_bumblebee, "~> 0.5.0"},
+    {:scholar, "~> 0.3.1"},
+    {:explorer, "~> 0.9.2"},
+    {:tucan, "~> 0.3.1"}
   ],
   config: [nx: [default_backend: EXLA.Backend]]
 )
@@ -238,26 +241,11 @@ We implement the logic to fetch documents from the `Phoenix LiveView` GitHub rep
 
 ```elixir
 defmodule RAG.DataCollector do
-  def process_directory(url) do
+  def process_directory(url, extractor) do
     Req.get!(url).body
-    |> Enum.flat_map(&extract_chunks/1)
+    #|> Enum.flat_map(&extract_chunks/1)
+    |> Enum.flat_map(fn file -> extractor.(file) end)
   end
-  
-  defp extract_chunks(file) do
-    case file do
-      %{"type" => "file", "name" => name, "download_url" => download_url} ->
-        if String.ends_with?(name, ".md") do
-          Req.get!(download_url).body
-          |> TextChunker.split(format: :markdown, chunk_size: 500, chunk_overlap: 200)
-          #|> TextChunker.split(format: :markdown)
-          |> Enum.map(&Map.get(&1, :text))
-        else
-          []
-        end
-      _ -> []
-    end
-  end
-
 end
 ```
 
@@ -360,39 +348,59 @@ RAG.Embedder.generate_embedding("phoenix liveview")
 
 We setup the foundations of our RAG by chunking and inserting our documents as strngs and embeddings, their numerical representation, into our vector database.
 
+We read each Github folder and download the markdown file, chunk it into a list of strings, and then compute an embedding for each chunk and save it into the vector database.
+
+```elixir
+defmodule RAG.ExternalSources do
+
+  def extract_chunks(file) do
+    case file do
+      %{"type" => "file", "name" => name, "download_url" => download_url} ->
+        if String.ends_with?(name, ".md") do
+          Req.get!(download_url).body
+          |> TextChunker.split(format: :markdown, chunk_size: 800, chunk_overlap: 200)
+          |> Enum.map(&Map.get(&1, :text))
+        else
+          []
+        end
+      _ -> []
+    end
+  end
+
+  def build(guides) do
+    guides
+    |> Task.async_stream(fn guide -> 
+      chunks = RAG.DataCollector.process_directory(guide, &extract_chunks/1) 
+      IO.puts("chunks length: #{length(chunks)}")
+      Enum.each(chunks, fn chunk -> 
+         Task.start(fn -> 
+            embedding = RAG.Embedder.generate_embedding(chunk)
+            RAG.Repo.insert!(%RAG.Document{content: chunk, embedding: embedding})  
+         end)
+      end)
+    end, 
+    ordered: false,
+    timeout: :infinity
+    )
+    |> Stream.run() 
+  end
+end
+```
+
 ```elixir
 guides  = [
   "https://api.github.com/repos/phoenixframework/phoenix_live_view/contents/guides/server",
   "https://api.github.com/repos/phoenixframework/phoenix_live_view/contents/guides/client",
   "https://api.github.com/repos/phoenixframework/phoenix_live_view/contents/guides/introduction"
 ]
-```
 
-We read each Github folder and download the markdown file, chunk it into a list of strings, and then compute an embedding for each chunk and save it into the vector database.
-
-```elixir
-guides
-|> Task.async_stream(fn guide -> 
-  chunks = RAG.DataCollector.process_directory(guide) 
-  IO.puts("chunks length: #{length(chunks)}")
-  Enum.each(chunks, fn chunk -> 
-     Task.start(fn -> 
-        #IO.puts(String.length(chunk))
-        embedding = RAG.Embedder.generate_embedding(chunk)
-        RAG.Repo.insert!(%RAG.Document{content: chunk, embedding: embedding})  
-     end)
-  end)
-end, 
-ordered: false,
-timeout: :infinity
-)
-|> Stream.run()
+RAG.ExternalSources.build(guides)
 ```
 
 We check the number of insertions. We should have 422.
 
 ```elixir
-RAG.Repo.aggregate(RAG.Document, :count, :id) == 422
+RAG.Repo.aggregate(RAG.Document, :count, :id) 
 ```
 
 ## Semantic search
@@ -427,7 +435,7 @@ query = "how to handle forms server-side?"
 top_results = RAG.SemanticSearch.search(query, top_k)
 ```
 
-We expect the response to contain at least "handle form":
+We inspect the first reranking:
 
 ```elixir
 List.first(top_results).content
@@ -441,6 +449,8 @@ We use a pretrained model "cross-encoder/ms-marco-MiniLM-L-6-v2" as shown in the
 
 ```elixir
 defmodule RAG.CrossEncoder do
+  @first 5
+  
   def load_model do
     repo= {:hf, "cross-encoder/ms-marco-MiniLM-L-6-v2"}
     tokenizer = {:hf, "bert-base-uncased"}
@@ -450,7 +460,7 @@ defmodule RAG.CrossEncoder do
     {model_info, tokenizer}
   end
 
-  def rerank(query, documents) do
+  def rerank(documents, query) do
     # Prepare input pairs for cross-encoder
     {model_info, tokenizer} = load_model()
     input_pairs = 
@@ -468,6 +478,7 @@ defmodule RAG.CrossEncoder do
     Enum.zip(documents, outputs.logits |> Nx.to_flat_list())
     |> Enum.sort_by(fn {_, score} -> score end, :desc)
     |> Enum.map(fn {doc, _} -> doc.content end)
+    |> Enum.take(@first)
   end
 end
 ```
@@ -489,8 +500,8 @@ This model uses the architecture `:for_sequence_classification`; there is no suc
 RAG.CrossEncoder.load_model()
 
 # Rerank the results
-query = "how to handle forms server-side?"
-context = RAG.CrossEncoder.rerank(query, top_results)
+#query = "how to handle forms server-side?"
+context = RAG.CrossEncoder.rerank(top_results, query)
 ```
 
 ## Build the prompt
@@ -499,7 +510,7 @@ We define the prompt with a context and a question
 
 ```elixir
 defmodule RAG.PromptBuilder do
-  def build_prompt(query, context) do
+  def build_prompt(context, query) do
     context_text = Enum.join(context, "\n\n")
     """
     You are a proficient Elixir developer, with full knowledge of the framework Phoenix LiveView.
@@ -508,7 +519,6 @@ defmodule RAG.PromptBuilder do
     #{context_text}
     -----------------------
     You answer to the query using in priority the context informations given above and you should cite it.
-    If the response contains Elixir code or Javascript snippet, format the response.
     The response should be in markdown format.
 
     Query: #{query}
@@ -586,24 +596,78 @@ As per the [documentation](https://hexdocs.pm/req/Req.Steps.html#encode_body/1-r
 Note that we need to increase the socket timeout above the default 5000.
 
 ```elixir
-prompt = RAG.PromptBuilder.build_prompt(query, context)
-json = %{stream: false, model: "codellama", prompt: prompt}
+defmodule LLM do
+  def generate_response(prompt) do
+    json = %{stream: false, model: "codellama", prompt: prompt}
 
-res = 
-  Req.post!(
-    "http://localhost:11434/api/generate",
-    json: json,
-    receive_timeout: 120_000
-  )
-
-response = 
-  case res do
-    %{status: 200, body: body} -> 
-      body["response"]
-    _ ->
-      IO.puts "error"
+    res = 
+      Req.post!(
+        "http://localhost:11434/api/generate",
+        json: json,
+        receive_timeout: 120_000
+      )
+    
+      case res do
+        %{status: 200, body: body} -> 
+          body["response"]
+        _ ->
+          IO.puts "error"
+      end
   end
+end
+```
 
+```elixir
+query
+```
+
+```elixir
+RAG.PromptBuilder.build_prompt(context, query)
+|> LLM.generate_response()
+```
+
+## Wrap up
+
+Seed the database with external sources
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+guides  = [
+  "https://api.github.com/repos/phoenixframework/phoenix_live_view/contents/guides/server",
+  "https://api.github.com/repos/phoenixframework/phoenix_live_view/contents/guides/client",
+  "https://api.github.com/repos/phoenixframework/phoenix_live_view/contents/guides/introduction"
+]
+
+RAG.ExternalSources.build(guides)
+```
+
+```elixir
+defmodule RAG do
+  def process_query(query) do
+    top_k = 10
+    
+    query
+    |> RAG.SemanticSearch.search(top_k)
+    # top_results
+    |> RAG.CrossEncoder.rerank(query)
+    # context
+    |> tap(&IO.puts/1)
+    |> RAG.PromptBuilder.build_prompt(query)
+    # prompt
+    |> LLM.generate_response()
+  end
+end
+
+query = "explain Javascript interoperability on the server-side"
+
+RAG.process_query(query)
 ```
 
 ## Dimension reduction & visualization
+
+We will use the `scholar` librabry,
+
+```elixir
+require Explorer.DataFrame, as: DF
+```
