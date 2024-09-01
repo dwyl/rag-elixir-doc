@@ -32,7 +32,7 @@ We will extract some markdown files from the Phoenix_LiveView GitHub repo.
 We will use a database to store chunks extracted from these files.
 
 
-- One way is **SQL Full-Text-Search**. If we use `Postgres`, we have a [built-in functionality](https://www.postgresql.org/docs/current/textsearch-intro.html#TEXTSEARCH-DOCUMENT). This works by using ** key words**, so given that we may have various ways to express the same questions, we may want a more semantic search.
+- One way is **SQL Full-Text-Search**. If we use `Postgres`, we have a [built-in functionality](https://www.postgresql.org/docs/current/textsearch-intro.html#TEXTSEARCH-DOCUMENT). This works by using ** key words**, so given that we may have various ways to express the same questions, we may want a more semantic search. [A good introduction to SQL FTS](https://leandronsp.com/a-powerful-full-text-search-in-postgresql-in-less-than-20-lines) or [here](https://peterullrich.com/complete-guide-to-full-text-search-with-postgres-and-ecto).
 
 - We can also use the open source version of "elastisearch" by Amazon named `opensearch` via a Docker image. We may also use the [local image of ElastiSearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/run-elasticsearch-locally.html). There exists [Text Chunking tools](https://opensearch.org/docs/latest/search-plugins/text-chunking/). This might be an interesting extension to our current effort given that an Opensearch client exists: [snap](https://github.com/breakroom/snap)
 
