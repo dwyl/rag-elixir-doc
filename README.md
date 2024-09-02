@@ -138,27 +138,6 @@ defmodule MyAppWeb.Components.Form do
 
 In the above example, we define a `Form` component that renders a form tag with a `phx-change` and `phx-submit` event to handle validation and submission of the form data. The `for` attribute is used to bind the form to a changeset or user parameters, which can be created from a form struct using `Phoenix.Component.to_form/1`.
 
-You may also take advantage of LiveView's CSS loading state classes to swap out your form content while the form is submitting. For example, with the following rules in your `app.css`:
-
-```css
-.while-submitting { display: none; }
-.inputs { display: block; }
-
-.phx-submit-loading .while-submitting { display: block; }
-  
-.phx-submit-loading .inputs { display: none; }
-```
-
-You can show and hide content with the following markup:
-
-```elixir
-<.form for={@form} phx-change="validate" phx-submit="save">
-  <div class="while-submitting">Please wait while we save our content...</div>
-  <div class="inputs">
-    <input type="text" name="text" value={@text}>
-</div>
-</.form>
-```
 
 Additionally, we strongly recommend including a unique HTML "id" attribute on the form. When DOM siblings change, elements without an ID will be replaced rather than moved, which can cause issues such as form fields losing focus.
 
