@@ -418,6 +418,8 @@ We will use SBERT based models:
 - the cross-encoder "cross-encoder/ms-marco-MiniLM-L-6-v2" along with the tokenizer "bert-base-uncased"
 
 
+We check that the models are correctly implemented in Elixir by running the code in Python. This is done in [#8](https://github.com/dwyl/rag-elixir-doc/discussions/8) and [#9](https://github.com/dwyl/rag-elixir-doc/discussions/9).
+
 ## Source of knowledge
 
 We firstly seed the vector database with some Github markdown pages from the Elixir documentation.
